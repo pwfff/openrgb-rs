@@ -20,34 +20,42 @@ pub use vec::*;
 pub use zone::*;
 pub use zone_type::*;
 
-use crate::OpenRGBError;
 use crate::protocol::{OpenRGBReadableStream, OpenRGBWritableStream};
+use crate::OpenRGBError;
 
-mod controller;
-mod direction;
-mod color_mode;
-mod device_type;
-mod zone_type;
-mod mode_flag;
-mod mode;
-mod zone;
-mod led;
 mod color;
-mod string;
-mod vec;
-mod primitive;
-mod tuple;
+mod color_mode;
+mod controller;
+mod device_type;
+mod direction;
+mod led;
+mod mode;
+mod mode_flag;
 mod packet;
+mod primitive;
+mod string;
+mod tuple;
+mod vec;
+mod zone;
+mod zone_type;
 
 #[async_trait]
 #[doc(hidden)]
 pub trait OpenRGBReadable: Sized + Send + Sync {
-    async fn read(stream: &mut impl OpenRGBReadableStream, protocol: u32) -> Result<Self, OpenRGBError>;
+    fn foo(&self) {}
+    async fn read(
+        stream: &mut impl OpenRGBReadableStream,
+        protocol: u32,
+    ) -> Result<Self, OpenRGBError>;
 }
 
 #[async_trait]
 #[doc(hidden)]
 pub trait OpenRGBWritable: Sized + Send + Sync {
     fn size(&self, protocol: u32) -> usize;
-    async fn write(self, stream: &mut impl OpenRGBWritableStream, protocol: u32) -> Result<(), OpenRGBError>;
+    async fn write(
+        self,
+        stream: &mut impl OpenRGBWritableStream,
+        protocol: u32,
+    ) -> Result<(), OpenRGBError>;
 }

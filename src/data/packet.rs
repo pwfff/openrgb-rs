@@ -4,8 +4,8 @@ use async_trait::async_trait;
 use num_traits::FromPrimitive;
 
 use crate::data::{OpenRGBReadable, OpenRGBWritable};
-use crate::OpenRGBError::{self, ProtocolError};
 use crate::protocol::{OpenRGBReadableStream, OpenRGBWritableStream};
+use crate::OpenRGBError::{self, ProtocolError};
 
 /// OpenRGB protocol packet ID.
 ///
@@ -67,17 +67,25 @@ impl OpenRGBWritable for PacketId {
         size_of::<u32>()
     }
 
-    async fn write(self, stream: &mut impl OpenRGBWritableStream, protocol: u32) -> Result<(), OpenRGBError> {
+    async fn write(
+        self,
+        stream: &mut impl OpenRGBWritableStream,
+        protocol: u32,
+    ) -> Result<(), OpenRGBError> {
         stream.write_value(self as u32, protocol).await
     }
 }
 
 #[async_trait]
 impl OpenRGBReadable for PacketId {
-    async fn read(stream: &mut impl OpenRGBReadableStream, protocol: u32) -> Result<Self, OpenRGBError> {
-        stream.read_value::<u32>(protocol)
-            .await
-            .and_then(|id| PacketId::from_u32(id).ok_or_else(|| ProtocolError(format!("unknown packed ID \"{}\"", id))))
+    async fn read(
+        stream: &mut impl OpenRGBReadableStream,
+        protocol: u32,
+    ) -> Result<Self, OpenRGBError> {
+        stream.read_value::<u32>(protocol).await.and_then(|id| {
+            PacketId::from_u32(id)
+                .ok_or_else(|| ProtocolError(format!("unknown packed ID \"{}\"", id)))
+        })
     }
 }
 
@@ -89,9 +97,9 @@ mod tests {
     use tokio_test::io::Builder;
 
     use crate::data::packet::PacketId;
-    use crate::DEFAULT_PROTOCOL;
     use crate::protocol::{OpenRGBReadableStream, OpenRGBWritableStream};
     use crate::tests::setup;
+    use crate::DEFAULT_PROTOCOL;
 
     #[test]
     fn test_convert_to_u32() {
@@ -103,16 +111,16 @@ mod tests {
         assert_eq!(PacketId::from_u32(100), Some(PacketId::DeviceListUpdated))
     }
 
-
     #[tokio::test]
     async fn test_read_001() -> Result<(), Box<dyn Error>> {
         setup()?;
 
-        let mut stream = Builder::new()
-            .read(&1101_u32.to_le_bytes())
-            .build();
+        let mut stream = Builder::new().read(&1101_u32.to_le_bytes()).build();
 
-        assert_eq!(stream.read_value::<PacketId>(DEFAULT_PROTOCOL).await?, PacketId::RGBControllerUpdateMode);
+        assert_eq!(
+            stream.read_value::<PacketId>(DEFAULT_PROTOCOL).await?,
+            PacketId::RGBControllerUpdateMode
+        );
 
         Ok(())
     }
@@ -121,11 +129,11 @@ mod tests {
     async fn test_write_001() -> Result<(), Box<dyn Error>> {
         setup()?;
 
-        let mut stream = Builder::new()
-            .write(&1101_u32.to_le_bytes())
-            .build();
+        let mut stream = Builder::new().write(&1101_u32.to_le_bytes()).build();
 
-        stream.write_value(PacketId::RGBControllerUpdateMode, DEFAULT_PROTOCOL).await?;
+        stream
+            .write_value(PacketId::RGBControllerUpdateMode, DEFAULT_PROTOCOL)
+            .await?;
 
         Ok(())
     }
