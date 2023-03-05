@@ -114,6 +114,7 @@ impl<S: OpenRGBStream> OpenRGB<S> {
     ) -> Result<(), OpenRGBError> {
         let mut stream = self.stream.lock().await;
         let packet_id = stream.read_any(protocol, expected_device_id).await?;
+        println!("gonna process {:?}", packet_id);
         match packet_id {
             PacketId::RequestProtocolVersion => {
                 // consume client protocol version
@@ -135,9 +136,11 @@ impl<S: OpenRGBStream> OpenRGB<S> {
                 Ok(())
             }
             PacketId::RequestControllerCount => {
+                // consume client protocol version
+                stream.read_value::<String>(protocol).await;
                 // TODO: actually count controllers?
                 stream
-                    .write_packet(protocol, expected_device_id, RequestControllerCount, 1)
+                    .write_packet(protocol, expected_device_id, RequestControllerCount, 1u32)
                     .await
             }
             // PacketId::RequestControllerData => stream.read_packet::<Controller>(protocol).await,
