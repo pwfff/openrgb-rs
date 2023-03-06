@@ -5,10 +5,11 @@ use tokio::net::TcpStream;
 
 use OpenRGBError::*;
 
+use crate::data::packet::{self, Header};
 use crate::data::{OpenRGBReadable, OpenRGBWritable, PacketId};
 use crate::OpenRGBError;
 
-static MAGIC: [u8; 4] = *b"ORGB";
+pub static MAGIC: [u8; 4] = *b"ORGB";
 
 #[async_trait]
 pub trait OpenRGBReadableStream: AsyncReadExt + Sized + Send + Sync + Unpin {
@@ -170,6 +171,36 @@ pub trait OpenRGBStream: OpenRGBReadableStream + OpenRGBWritableStream {
         self.write_packet(protocol, device_id, packet_id, data)
             .await?;
         self.read_packet(protocol, device_id, packet_id).await
+    }
+
+    async fn handle(&mut self, protocol: u32) -> Result<(), OpenRGBError> {
+        let header = Header::read(self, protocol).await?;
+
+        match header.packet_id {
+            PacketId::RequestProtocolVersion => {
+                let body = packet::RequestProtocolVersionBody::read(self, protocol).await?;
+                let packet = packet::RequestProtocolVersion { header, body };
+                self.write_value(packet, protocol).await
+            }
+            // PacketId::SetClientName => {
+            //     // consume client name
+            //     // TODO: use this??
+            //     self.read_value::<String>(protocol).await;
+            //     Ok(())
+            // }
+            // PacketId::RequestControllerCount => {
+            //     // consume client protocol version
+            //     self.read_value::<String>(protocol).await;
+            //     // TODO: actually count controllers?
+            //     self.write_packet(protocol, 0, RequestControllerCount, 1u32)
+            //         .await
+            // }
+            // PacketId::RequestControllerData => stream.read_packet::<Controller>(protocol).await,
+            _ => Err(OpenRGBError::ProtocolError(format!(
+                "don't know how to respond to packet ID: {:?}",
+                header.packet_id
+            ))),
+        }
     }
 }
 

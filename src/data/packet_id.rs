@@ -96,7 +96,7 @@ mod tests {
     use num_traits::{FromPrimitive, ToPrimitive};
     use tokio_test::io::Builder;
 
-    use crate::data::packet::PacketId;
+    use crate::data::packet_id::PacketId;
     use crate::protocol::{OpenRGBReadableStream, OpenRGBWritableStream};
     use crate::tests::setup;
     use crate::DEFAULT_PROTOCOL;

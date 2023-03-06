@@ -1,4 +1,4 @@
-use crate::data::Controller;
+use crate::data::{Controller, PacketId};
 use crate::data::{ControllerTrait, PacketId::RequestControllerData};
 use crate::protocol::OpenRGBStream;
 use crate::OpenRGB;

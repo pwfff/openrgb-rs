@@ -107,50 +107,6 @@ impl<S: OpenRGBStream> OpenRGB<S> {
         })
     }
 
-    pub async fn handle(
-        &mut self,
-        protocol: u32,
-        expected_device_id: u32,
-    ) -> Result<(), OpenRGBError> {
-        let mut stream = self.stream.lock().await;
-        let packet_id = stream.read_any(protocol, expected_device_id).await?;
-        println!("gonna process {:?}", packet_id);
-        match packet_id {
-            PacketId::RequestProtocolVersion => {
-                // consume client protocol version
-                stream.read_value::<u32>(protocol).await;
-                // respond with our version
-                stream
-                    .write_packet(
-                        protocol,
-                        expected_device_id,
-                        RequestProtocolVersion,
-                        protocol,
-                    )
-                    .await
-            }
-            PacketId::SetClientName => {
-                // consume client name
-                // TODO: use this??
-                stream.read_value::<String>(protocol).await;
-                Ok(())
-            }
-            PacketId::RequestControllerCount => {
-                // consume client protocol version
-                stream.read_value::<String>(protocol).await;
-                // TODO: actually count controllers?
-                stream
-                    .write_packet(protocol, expected_device_id, RequestControllerCount, 1u32)
-                    .await
-            }
-            // PacketId::RequestControllerData => stream.read_packet::<Controller>(protocol).await,
-            _ => Err(OpenRGBError::ProtocolError(format!(
-                "don't know how to respond to packet ID: {:?}",
-                packet_id
-            ))),
-        }
-    }
-
     pub async fn request<I: OpenRGBWritable, O: OpenRGBReadable>(
         &mut self,
         protocol: u32,
