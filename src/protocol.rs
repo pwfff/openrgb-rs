@@ -17,38 +17,6 @@ pub trait OpenRGBReadableStream: AsyncReadExt + Sized + Send + Sync + Unpin {
         T::read(self, protocol).await
     }
 
-    async fn read_any(
-        &mut self,
-        protocol: u32,
-        expected_device_id: u32,
-    ) -> Result<PacketId, OpenRGBError> {
-        for c in MAGIC {
-            if self.read_u8().await? != c {
-                return Err(ProtocolError(format!(
-                    "expected OpenRGB magic value, got \"{}\"",
-                    c
-                )));
-            }
-        }
-
-        let device_id = self.read_value::<u32>(protocol).await?;
-        if device_id != expected_device_id {
-            return Err(ProtocolError(format!(
-                "expected device ID {}, got {}",
-                expected_device_id, device_id
-            )));
-        }
-
-        let packet_id = self.read_value::<PacketId>(protocol).await?;
-        let data_length: usize = self
-            .read_value::<u32>(protocol)
-            .await?
-            .try_into()
-            .map_err(|e| ProtocolError(format!("received invalid data length: {}", e)))?;
-
-        Ok(packet_id)
-    }
-
     async fn read_header(
         &mut self,
         protocol: u32,

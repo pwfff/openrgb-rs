@@ -23,6 +23,8 @@ pub use zone_type::*;
 use crate::protocol::{OpenRGBReadableStream, OpenRGBStream, OpenRGBWritableStream};
 use crate::OpenRGBError;
 
+pub mod packet;
+
 mod color;
 mod color_mode;
 mod controller;
@@ -31,7 +33,6 @@ mod direction;
 mod led;
 mod mode;
 mod mode_flag;
-pub mod packet;
 mod packet_id;
 mod primitive;
 mod string;

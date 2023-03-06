@@ -56,9 +56,5 @@ impl OpenRGBServer {
         loop {
             s.handle(DEFAULT_PROTOCOL).await?
         }
-        // println!("handling connection");
-        // let foo: OpenRGB<TcpStream> = s.into();
-        // foo.handle(DEFAULT_PROTOCOL, 0).await?;
-        // Ok(())
     }
 }
