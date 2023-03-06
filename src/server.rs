@@ -37,14 +37,14 @@ impl OpenRGBServer {
         loop {
             let (socket, _) = self.inner.accept().await?;
             // let controller = self.controller.clone();
+            // let foo = controller.lock().await;
             tokio::spawn(async move {
-                // let foo = controller.lock().await;
-                Self::handle(
-                    // &foo,
-                    socket,
-                )
-                .await
-                .unwrap();
+                match Self::handle(socket).await {
+                    Ok(()) => {}
+                    Err(e) => {
+                        println!("{}", e);
+                    }
+                }
             });
         }
     }
@@ -53,7 +53,9 @@ impl OpenRGBServer {
         // controller: &Controller,
         mut s: TcpStream,
     ) -> Result<(), OpenRGBError> {
-        s.handle(DEFAULT_PROTOCOL).await
+        loop {
+            s.handle(DEFAULT_PROTOCOL).await?
+        }
         // println!("handling connection");
         // let foo: OpenRGB<TcpStream> = s.into();
         // foo.handle(DEFAULT_PROTOCOL, 0).await?;

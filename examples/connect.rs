@@ -5,7 +5,7 @@ use openrgb::OpenRGB;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // connect to local server
-    let client = OpenRGB::connect_to(("localhost", 6742)).await?;
+    let client = OpenRGB::connect_to(("localhost", 8123)).await?;
 
     // set client name
     client.set_name("my client").await?;

@@ -90,6 +90,7 @@ impl OpenRGBWritable for RequestProtocolVersion {
         protocol: u32,
     ) -> Result<(), OpenRGBError> {
         // respond with our version
+        println!("responding with protocol version");
         stream
             .write_packet(
                 protocol,
