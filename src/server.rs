@@ -51,13 +51,12 @@ impl OpenRGBServer {
 
     async fn handle(
         // controller: &Controller,
-        s: TcpStream,
+        mut s: TcpStream,
     ) -> Result<(), OpenRGBError> {
-        println!("handling connection");
-        OpenRGB::<TcpStream>::new(s)
-            .await?
-            .handle(DEFAULT_PROTOCOL, 0)
-            .await?;
-        Ok(())
+        s.handle(DEFAULT_PROTOCOL).await
+        // println!("handling connection");
+        // let foo: OpenRGB<TcpStream> = s.into();
+        // foo.handle(DEFAULT_PROTOCOL, 0).await?;
+        // Ok(())
     }
 }

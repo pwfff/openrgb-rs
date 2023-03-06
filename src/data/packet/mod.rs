@@ -7,27 +7,13 @@ use crate::OpenRGBError::ProtocolError;
 
 use super::OpenRGBWritable;
 
-impl PacketId {
-    async fn get_type<T>(self) -> Result<T, OpenRGBError>
-    where
-        T: Packet,
-    {
-        match self {
-            PacketId::RequestProtocolVersion => RequestProtocolVersion,
-            (_) => OpenRGBError::UnsupportedOperation {
-                operation: format!("can't handle {:?}", self),
-                current_protocol_version: (),
-                min_protocol_version: (),
-            },
-        }
-    }
-}
-
-pub trait Packet {
-    fn header(&self) -> Header {
-        self.header
-    }
-    fn body(&self) -> dyn OpenRGBReadable;
+pub trait Packet<T>
+where
+    Self: Sized,
+    T: OpenRGBReadable,
+{
+    fn header(&self) -> Header;
+    fn body(&self) -> T;
 }
 
 pub struct Header {
@@ -72,7 +58,13 @@ pub struct RequestProtocolVersion {
     body: RequestProtocolVersionBody,
 }
 
-pub type RequestProtocolVersionBody = ();
+impl RequestProtocolVersion {
+    pub fn new(header: Header, body: RequestProtocolVersionBody) -> Self {
+        Self { header, body }
+    }
+}
+
+pub struct RequestProtocolVersionBody {}
 
 #[async_trait]
 impl OpenRGBReadable for RequestProtocolVersionBody {
@@ -81,9 +73,8 @@ impl OpenRGBReadable for RequestProtocolVersionBody {
         protocol: u32,
     ) -> Result<Self, OpenRGBError> {
         // consume client protocol version
-        stream.read_value::<u32>(protocol).await;
-
-        Ok(())
+        stream.read_value::<u32>(protocol).await?;
+        Ok(RequestProtocolVersionBody {})
     }
 }
 

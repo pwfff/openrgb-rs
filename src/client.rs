@@ -80,6 +80,15 @@ impl OpenRGB<TcpStream> {
     }
 }
 
+impl From<TcpStream> for OpenRGB<TcpStream> {
+    fn from(value: TcpStream) -> Self {
+        Self {
+            protocol: DEFAULT_PROTOCOL,
+            stream: Arc::new(Mutex::new(value)),
+        }
+    }
+}
+
 impl<S: OpenRGBStream> OpenRGB<S> {
     /// Build a new client from given stream.
     ///

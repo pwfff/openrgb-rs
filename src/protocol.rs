@@ -176,10 +176,12 @@ pub trait OpenRGBStream: OpenRGBReadableStream + OpenRGBWritableStream {
     async fn handle(&mut self, protocol: u32) -> Result<(), OpenRGBError> {
         let header = Header::read(self, protocol).await?;
 
+        println!("handling {:?}", header.packet_id);
+
         match header.packet_id {
             PacketId::RequestProtocolVersion => {
                 let body = packet::RequestProtocolVersionBody::read(self, protocol).await?;
-                let packet = packet::RequestProtocolVersion { header, body };
+                let packet = packet::RequestProtocolVersion::new(header, body);
                 self.write_value(packet, protocol).await
             }
             // PacketId::SetClientName => {
