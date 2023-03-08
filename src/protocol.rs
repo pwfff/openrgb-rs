@@ -5,7 +5,7 @@ use tokio::net::TcpStream;
 
 use OpenRGBError::*;
 
-use crate::data::packet::{self, read_any, Header};
+use crate::data::packet::{self, Header, Packet};
 use crate::data::{OpenRGBReadable, OpenRGBWritable, PacketId};
 use crate::OpenRGBError;
 
@@ -142,9 +142,10 @@ pub trait OpenRGBStream: OpenRGBReadableStream + OpenRGBWritableStream {
     }
 
     async fn handle(&mut self, protocol: u32) -> Result<(), OpenRGBError> {
-        let header = Header::read(self, protocol).await?;
-        let p = packet::read_any(header.into(), self, protocol).await?;
-        p.write(self, protocol).await
+        packet::read_any(self, protocol)
+            .await?
+            .write(self, protocol)
+            .await
     }
 }
 

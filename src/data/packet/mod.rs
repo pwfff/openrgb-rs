@@ -15,17 +15,17 @@ mod packets;
 trait PacketBody: Sized + OpenRGBReadable {}
 
 pub async fn read_any(
-    header: Box<Header>,
     stream: &mut impl OpenRGBReadableStream,
     protocol: u32,
 ) -> Result<impl Packet, OpenRGBError> {
+    let header = Box::new(Header::read(stream, protocol).await?);
     match header.packet_id {
         PacketId::RequestProtocolVersion => {
             RequestProtocolVersion::read(header, stream, protocol).await
         }
-        // PacketId::RequestControllerCount => {
-        //     Packet::read_any::<RequestControllerCount>(self.into(), stream, protocol).await
-        // }
+        PacketId::RequestControllerCount => {
+            RequestControllerCount::read(header, stream, protocol).await
+        }
         // PacketId::SetClientName => {
         //     // consume client name
         //     // TODO: use this??
@@ -48,29 +48,22 @@ pub async fn read_any(
 }
 
 #[async_trait]
-pub trait Packet: OpenRGBWritable
-where
-    Self: Sized,
-{
-    type PacketBody: OpenRGBReadable;
-
+pub trait Packet: Sized + Send + Sync {
     async fn read(
         header: Box<Header>,
         stream: &mut impl OpenRGBReadableStream,
         protocol: u32,
-    ) -> Result<Self, OpenRGBError> {
-        Ok(Self::new(
-            header,
-            stream.read_value::<Self::PacketBody>(protocol).await?,
-        ))
-    }
+    ) -> Result<Self, OpenRGBError>;
 
-    fn new(header: Box<Header>, body: Self::PacketBody) -> Self;
     fn header(&self) -> &Header;
 
-    fn size(&self, protocol: u32) -> usize {
-        0
-    }
+    fn size(&self, protocol: u32) -> usize;
+
+    async fn write_body(
+        self,
+        stream: &mut impl OpenRGBWritableStream,
+        protocol: u32,
+    ) -> Result<(), OpenRGBError>;
 
     async fn write(
         self,
@@ -79,8 +72,14 @@ where
     ) -> Result<(), OpenRGBError> {
         let header = self.header();
         stream
-            .write_header(protocol, header.device_id, header.packet_id, 0)
-            .await
+            .write_header(
+                protocol,
+                header.device_id,
+                header.packet_id,
+                Packet::size(&self, protocol),
+            )
+            .await?;
+        self.write_body(stream, protocol).await
     }
 }
 
