@@ -7,6 +7,8 @@ use crate::data::{OpenRGBReadable, OpenRGBWritable};
 use crate::protocol::{OpenRGBReadableStream, OpenRGBWritableStream};
 use crate::OpenRGBError::{self, ProtocolError};
 
+use super::packet::RequestProtocolVersion;
+
 /// OpenRGB protocol packet ID.
 ///
 /// See [Open SDK documentation](https://gitlab.com/CalcProgrammer1/OpenRGB/-/wikis/OpenRGB-SDK-Documentation#packet-ids) for more information.

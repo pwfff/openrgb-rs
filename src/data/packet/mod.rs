@@ -6,20 +6,85 @@ use crate::OpenRGBError;
 use crate::OpenRGBError::ProtocolError;
 
 use super::OpenRGBWritable;
+use packets::*;
 
-pub trait Packet<T>
+mod packets;
+
+#[async_trait]
+pub trait Packet: OpenRGBWritable
 where
     Self: Sized,
-    T: OpenRGBReadable,
 {
-    fn header(&self) -> Header;
-    fn body(&self) -> T;
+    async fn read_any<P: Packet>(
+        header: Box<Header>,
+        stream: &mut impl OpenRGBReadableStream,
+        protocol: u32,
+    ) -> Result<P, OpenRGBError> {
+        P::read(header, stream, protocol).await
+    }
+
+    async fn read(
+        header: Box<Header>,
+        stream: &mut impl OpenRGBReadableStream,
+        protocol: u32,
+    ) -> Result<Self, OpenRGBError>;
+    fn header(&self) -> &Header;
+
+    fn size(&self, protocol: u32) -> usize {
+        0
+    }
+
+    async fn write(
+        self,
+        stream: &mut impl OpenRGBWritableStream,
+        protocol: u32,
+    ) -> Result<(), OpenRGBError> {
+        let header = self.header();
+        stream
+            .write_header(protocol, header.device_id, header.packet_id, 0)
+            .await
+    }
 }
 
 pub struct Header {
     pub device_id: u32,
     pub packet_id: PacketId,
     pub data_length: u32,
+}
+
+impl Header {
+    async fn read(
+        self,
+        stream: &mut impl OpenRGBReadableStream,
+        protocol: u32,
+    ) -> Result<impl Packet, OpenRGBError> {
+        match self.packet_id {
+            PacketId::RequestProtocolVersion => {
+                Packet::read_any::<RequestProtocolVersion>(self.into(), stream, protocol).await
+            }
+            // PacketId::RequestControllerCount => {
+            //     Packet::read_any::<RequestControllerCount>(self.into(), stream, protocol).await
+            // }
+            // PacketId::SetClientName => {
+            //     // consume client name
+            //     // TODO: use this??
+            //     self.read_value::<String>(protocol).await;
+            //     Ok(())
+            // }
+            // PacketId::RequestControllerCount => {
+            //     // consume client protocol version
+            //     self.read_value::<String>(protocol).await;
+            //     // TODO: actually count controllers?
+            //     self.write_packet(protocol, 0, RequestControllerCount, 1u32)
+            //         .await
+            // }
+            // PacketId::RequestControllerData => stream.read_packet::<Controller>(protocol).await,
+            _ => Err(OpenRGBError::ProtocolError(format!(
+                "don't know how to respond to packet ID: {:?}",
+                self.packet_id
+            ))),
+        }
+    }
 }
 
 #[async_trait]
@@ -50,54 +115,5 @@ impl OpenRGBReadable for Header {
             packet_id,
             data_length,
         })
-    }
-}
-
-pub struct RequestProtocolVersion {
-    header: Header,
-    body: RequestProtocolVersionBody,
-}
-
-impl RequestProtocolVersion {
-    pub fn new(header: Header, body: RequestProtocolVersionBody) -> Self {
-        Self { header, body }
-    }
-}
-
-pub struct RequestProtocolVersionBody {}
-
-#[async_trait]
-impl OpenRGBReadable for RequestProtocolVersionBody {
-    async fn read(
-        stream: &mut impl OpenRGBReadableStream,
-        protocol: u32,
-    ) -> Result<Self, OpenRGBError> {
-        // consume client protocol version
-        stream.read_value::<u32>(protocol).await?;
-        Ok(RequestProtocolVersionBody {})
-    }
-}
-
-#[async_trait]
-impl OpenRGBWritable for RequestProtocolVersion {
-    fn size(&self, protocol: u32) -> usize {
-        PacketId::RequestProtocolVersion.size(protocol)
-    }
-
-    async fn write(
-        self,
-        stream: &mut impl OpenRGBWritableStream,
-        protocol: u32,
-    ) -> Result<(), OpenRGBError> {
-        // respond with our version
-        println!("responding with protocol version");
-        stream
-            .write_packet(
-                protocol,
-                self.header.device_id,
-                PacketId::RequestProtocolVersion,
-                protocol,
-            )
-            .await
     }
 }
