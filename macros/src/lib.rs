@@ -33,6 +33,8 @@ pub fn impl_packet(args: TokenStream, input: TokenStream) -> TokenStream {
 
         #[async_trait]
         impl Packet for #ident {
+            type PacketBody = #body;
+
             async fn read(
                 header: Box<Header>,
                 stream: &mut impl OpenRGBReadableStream,
@@ -41,6 +43,11 @@ pub fn impl_packet(args: TokenStream, input: TokenStream) -> TokenStream {
                 let body = #body::read(stream, protocol).await?;
                 Ok(Self { header: *header, body })
             }
+
+            fn new(header: Box<Header>, body: #body) -> Self {
+                Self { header: *header, body }
+            }
+
             fn header(&self) -> &Header {
                 &self.header
             }

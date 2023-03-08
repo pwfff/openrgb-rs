@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use async_trait::async_trait;
 
 use crate::data::{OpenRGBReadable, PacketId};
@@ -10,24 +12,60 @@ use packets::*;
 
 mod packets;
 
+trait PacketBody: Sized + OpenRGBReadable {}
+
+pub async fn read_any(
+    header: Box<Header>,
+    stream: &mut impl OpenRGBReadableStream,
+    protocol: u32,
+) -> Result<impl Packet, OpenRGBError> {
+    match header.packet_id {
+        PacketId::RequestProtocolVersion => {
+            RequestProtocolVersion::read(header, stream, protocol).await
+        }
+        // PacketId::RequestControllerCount => {
+        //     Packet::read_any::<RequestControllerCount>(self.into(), stream, protocol).await
+        // }
+        // PacketId::SetClientName => {
+        //     // consume client name
+        //     // TODO: use this??
+        //     self.read_value::<String>(protocol).await;
+        //     Ok(())
+        // }
+        // PacketId::RequestControllerCount => {
+        //     // consume client protocol version
+        //     self.read_value::<String>(protocol).await;
+        //     // TODO: actually count controllers?
+        //     self.write_packet(protocol, 0, RequestControllerCount, 1u32)
+        //         .await
+        // }
+        // PacketId::RequestControllerData => stream.read_packet::<Controller>(protocol).await,
+        _ => Err(OpenRGBError::ProtocolError(format!(
+            "don't know how to respond to packet ID: {:?}",
+            header.packet_id
+        ))),
+    }
+}
+
 #[async_trait]
 pub trait Packet: OpenRGBWritable
 where
     Self: Sized,
 {
-    async fn read_any<P: Packet>(
-        header: Box<Header>,
-        stream: &mut impl OpenRGBReadableStream,
-        protocol: u32,
-    ) -> Result<P, OpenRGBError> {
-        P::read(header, stream, protocol).await
-    }
+    type PacketBody: OpenRGBReadable;
 
     async fn read(
         header: Box<Header>,
         stream: &mut impl OpenRGBReadableStream,
         protocol: u32,
-    ) -> Result<Self, OpenRGBError>;
+    ) -> Result<Self, OpenRGBError> {
+        Ok(Self::new(
+            header,
+            stream.read_value::<Self::PacketBody>(protocol).await?,
+        ))
+    }
+
+    fn new(header: Box<Header>, body: Self::PacketBody) -> Self;
     fn header(&self) -> &Header;
 
     fn size(&self, protocol: u32) -> usize {
@@ -50,41 +88,6 @@ pub struct Header {
     pub device_id: u32,
     pub packet_id: PacketId,
     pub data_length: u32,
-}
-
-impl Header {
-    async fn read(
-        self,
-        stream: &mut impl OpenRGBReadableStream,
-        protocol: u32,
-    ) -> Result<impl Packet, OpenRGBError> {
-        match self.packet_id {
-            PacketId::RequestProtocolVersion => {
-                Packet::read_any::<RequestProtocolVersion>(self.into(), stream, protocol).await
-            }
-            // PacketId::RequestControllerCount => {
-            //     Packet::read_any::<RequestControllerCount>(self.into(), stream, protocol).await
-            // }
-            // PacketId::SetClientName => {
-            //     // consume client name
-            //     // TODO: use this??
-            //     self.read_value::<String>(protocol).await;
-            //     Ok(())
-            // }
-            // PacketId::RequestControllerCount => {
-            //     // consume client protocol version
-            //     self.read_value::<String>(protocol).await;
-            //     // TODO: actually count controllers?
-            //     self.write_packet(protocol, 0, RequestControllerCount, 1u32)
-            //         .await
-            // }
-            // PacketId::RequestControllerData => stream.read_packet::<Controller>(protocol).await,
-            _ => Err(OpenRGBError::ProtocolError(format!(
-                "don't know how to respond to packet ID: {:?}",
-                self.packet_id
-            ))),
-        }
-    }
 }
 
 #[async_trait]

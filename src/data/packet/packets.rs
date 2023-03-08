@@ -11,6 +11,8 @@ pub struct RequestProtocolVersion {
 
 pub struct RequestProtocolVersionBody {}
 
+impl PacketBody for RequestProtocolVersionBody {}
+
 #[async_trait]
 impl OpenRGBReadable for RequestProtocolVersionBody {
     async fn read(
