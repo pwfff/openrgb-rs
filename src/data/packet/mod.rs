@@ -3,7 +3,7 @@ use std::any::Any;
 use async_trait::async_trait;
 
 use crate::data::{OpenRGBReadable, PacketId};
-use crate::protocol::{OpenRGBReadableStream, OpenRGBWritableStream, MAGIC};
+use crate::protocol::{OpenRGBReadableStream, OpenRGBStream, OpenRGBWritableStream, MAGIC};
 use crate::OpenRGBError;
 use crate::OpenRGBError::ProtocolError;
 
@@ -14,18 +14,24 @@ mod packets;
 
 trait PacketBody: Sized + OpenRGBReadable {}
 
-pub async fn read_any(
-    stream: &mut impl OpenRGBReadableStream,
-    protocol: u32,
-) -> Result<impl Packet, OpenRGBError> {
-    let header = Box::new(Header::read(stream, protocol).await?);
+pub async fn read_any(stream: &mut impl OpenRGBStream, protocol: u32) -> Result<(), OpenRGBError> {
+    let header = Header::read(stream, protocol).await?;
     match header.packet_id {
         PacketId::RequestProtocolVersion => {
-            RequestProtocolVersion::read(header, stream, protocol).await
+            let p = RequestProtocolVersion { header };
+            p.read(stream, protocol).await?;
+            p.write(stream, protocol).await?;
+            Ok(())
         }
         PacketId::RequestControllerCount => {
-            RequestControllerCount::read(header, stream, protocol).await
+            let p = RequestControllerCount { header };
+            p.read(stream, protocol).await?;
+            p.write(stream, protocol).await?;
+            Ok(())
         }
+        // PacketId::RequestControllerCount => {
+        //     RequestControllerCount::read(header, stream, protocol).await
+        // }
         // PacketId::SetClientName => {
         //     // consume client name
         //     // TODO: use this??
@@ -48,35 +54,36 @@ pub async fn read_any(
 }
 
 #[async_trait]
-pub trait Packet: Sized + Send + Sync {
+pub trait Packet: Sync {
     async fn read(
-        header: Box<Header>,
+        &self,
         stream: &mut impl OpenRGBReadableStream,
         protocol: u32,
-    ) -> Result<Self, OpenRGBError>;
+    ) -> Result<(), OpenRGBError>;
 
     fn header(&self) -> &Header;
 
     fn size(&self, protocol: u32) -> usize;
 
     async fn write_body(
-        self,
+        &self,
         stream: &mut impl OpenRGBWritableStream,
         protocol: u32,
     ) -> Result<(), OpenRGBError>;
 
     async fn write(
-        self,
+        &self,
         stream: &mut impl OpenRGBWritableStream,
         protocol: u32,
     ) -> Result<(), OpenRGBError> {
+        println!("writing header");
         let header = self.header();
         stream
             .write_header(
                 protocol,
                 header.device_id,
                 header.packet_id,
-                Packet::size(&self, protocol),
+                self.size(protocol),
             )
             .await?;
         self.write_body(stream, protocol).await

@@ -105,7 +105,7 @@ impl<S: OpenRGBStream> OpenRGB<S> {
                 .await?,
         );
 
-        debug!(
+        println!(
             "Connected to OpenRGB server using protocol version {:?}",
             protocol
         );

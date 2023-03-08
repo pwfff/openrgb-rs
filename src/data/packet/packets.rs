@@ -1,20 +1,22 @@
 use async_trait::async_trait;
 
+use crate::DEFAULT_PROTOCOL;
+
 use super::*;
 
 pub struct RequestProtocolVersion {
-    header: Header,
+    pub header: Header,
 }
 
 #[async_trait]
 impl Packet for RequestProtocolVersion {
     async fn read(
-        header: Box<Header>,
+        &self,
         stream: &mut impl OpenRGBReadableStream,
         protocol: u32,
-    ) -> Result<Self, OpenRGBError> {
+    ) -> Result<(), OpenRGBError> {
         u32::read(stream, protocol).await?;
-        Ok(Self { header: *header })
+        Ok(())
     }
 
     fn header(&self) -> &Header {
@@ -26,36 +28,28 @@ impl Packet for RequestProtocolVersion {
     }
 
     async fn write_body(
-        self,
+        &self,
         stream: &mut impl OpenRGBWritableStream,
         protocol: u32,
     ) -> Result<(), OpenRGBError> {
         // respond with our version
         println!("responding with protocol version");
-        stream
-            .write_packet(
-                protocol,
-                self.header.device_id,
-                PacketId::RequestProtocolVersion,
-                protocol,
-            )
-            .await
+        stream.write_value(DEFAULT_PROTOCOL, protocol).await
     }
 }
 
 pub struct RequestControllerCount {
-    header: Header,
+    pub header: Header,
 }
 
 #[async_trait]
 impl Packet for RequestControllerCount {
     async fn read(
-        header: Box<Header>,
+        &self,
         stream: &mut impl OpenRGBReadableStream,
         protocol: u32,
-    ) -> Result<Self, OpenRGBError> {
-        u32::read(stream, protocol).await?;
-        Ok(Self { header: *header })
+    ) -> Result<(), OpenRGBError> {
+        Ok(())
     }
 
     fn header(&self) -> &Header {
@@ -67,19 +61,12 @@ impl Packet for RequestControllerCount {
     }
 
     async fn write_body(
-        self,
+        &self,
         stream: &mut impl OpenRGBWritableStream,
         protocol: u32,
     ) -> Result<(), OpenRGBError> {
         // respond with our version
-        println!("responding with protocol version");
-        stream
-            .write_packet(
-                protocol,
-                self.header.device_id,
-                PacketId::RequestControllerCount,
-                protocol,
-            )
-            .await
+        println!("responding with controller count");
+        stream.write_value(5, protocol).await
     }
 }
