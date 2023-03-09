@@ -12,22 +12,26 @@ use packets::*;
 
 mod packets;
 
-trait PacketBody: Sized + OpenRGBReadable {}
+pub enum Packet {
+    RequestProtocolVersion(RequestProtocolVersion),
+    RequestControllerCount(RequestControllerCount),
+}
 
-pub async fn read_any(stream: &mut impl OpenRGBStream, protocol: u32) -> Result<(), OpenRGBError> {
+// trait PacketBody: Sized + OpenRGBReadable {}
+
+pub async fn read_any(
+    stream: &mut impl OpenRGBStream,
+    protocol: u32,
+) -> Result<Packet, OpenRGBError> {
     let header = Header::read(stream, protocol).await?;
     match header.packet_id {
         PacketId::RequestProtocolVersion => {
             let p = RequestProtocolVersion { header };
-            p.read(stream, protocol).await?;
-            p.write(stream, protocol).await?;
-            Ok(())
+            p.read(stream, protocol).await
         }
         PacketId::RequestControllerCount => {
             let p = RequestControllerCount { header };
-            p.read(stream, protocol).await?;
-            p.write(stream, protocol).await?;
-            Ok(())
+            p.read(stream, protocol).await
         }
         // PacketId::RequestControllerCount => {
         //     RequestControllerCount::read(header, stream, protocol).await
@@ -54,12 +58,12 @@ pub async fn read_any(stream: &mut impl OpenRGBStream, protocol: u32) -> Result<
 }
 
 #[async_trait]
-pub trait Packet: Sync {
+pub trait PacketT: Sync {
     async fn read(
         &self,
         stream: &mut impl OpenRGBReadableStream,
         protocol: u32,
-    ) -> Result<(), OpenRGBError>;
+    ) -> Result<Packet, OpenRGBError>;
 
     fn header(&self) -> &Header;
 

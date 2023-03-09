@@ -143,7 +143,7 @@ pub trait OpenRGBStream: OpenRGBReadableStream + OpenRGBWritableStream {
     }
 
     async fn handle(&mut self, protocol: u32) -> Result<(), OpenRGBError> {
-        packet::read_any(self, protocol).await
+        let p = packet::read_any(self, protocol).await?;
     }
 }
 
