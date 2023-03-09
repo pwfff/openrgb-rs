@@ -5,7 +5,7 @@ use tokio::net::TcpStream;
 
 use OpenRGBError::*;
 
-use crate::data::packet::{self, Header, Packet};
+use crate::data::packet::{self, Header, Packet, PacketT};
 use crate::data::{OpenRGBReadable, OpenRGBWritable, PacketId};
 use crate::OpenRGBError;
 
@@ -77,7 +77,7 @@ pub trait OpenRGBWritableStream: AsyncWriteExt + Sized + Send + Sync + Unpin {
         value: T,
         protocol: u32,
     ) -> Result<(), OpenRGBError> {
-        T::write(value, self, protocol).await
+        value.write(self, protocol).await
     }
 
     async fn write_header(
@@ -144,7 +144,18 @@ pub trait OpenRGBStream: OpenRGBReadableStream + OpenRGBWritableStream {
 
     async fn handle(&mut self, protocol: u32) -> Result<(), OpenRGBError> {
         let p = packet::read_any(self, protocol).await?;
-        p.write()
+        // no compile??
+        // let poop: dyn PacketT = p;
+        // poop.write(self, protocol)
+
+        // why? why do i have to do this??
+        match p {
+            Packet::RequestProtocolVersion(p) => p.write(self, protocol).await,
+            Packet::RequestControllerCount(p) => p.write(self, protocol).await,
+        }
+
+        // let poop: Box<dyn PacketT> = Box::new(p);
+        // poop.write(self, protocol).await
     }
 }
 

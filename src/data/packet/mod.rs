@@ -1,6 +1,7 @@
 use std::any::Any;
 
 use async_trait::async_trait;
+use enum_dispatch::enum_dispatch;
 
 use crate::data::{OpenRGBReadable, PacketId};
 use crate::protocol::{OpenRGBReadableStream, OpenRGBStream, OpenRGBWritableStream, MAGIC};
@@ -12,6 +13,7 @@ use packets::*;
 
 mod packets;
 
+#[enum_dispatch]
 pub enum Packet {
     RequestProtocolVersion(RequestProtocolVersion),
     RequestControllerCount(RequestControllerCount),
@@ -74,24 +76,24 @@ pub trait PacketT: Sync {
         stream: &mut impl OpenRGBWritableStream,
         protocol: u32,
     ) -> Result<(), OpenRGBError>;
+}
 
-    async fn write(
-        &self,
-        stream: &mut impl OpenRGBWritableStream,
-        protocol: u32,
-    ) -> Result<(), OpenRGBError> {
-        println!("writing header");
-        let header = self.header();
-        stream
-            .write_header(
-                protocol,
-                header.device_id,
-                header.packet_id,
-                self.size(protocol),
-            )
-            .await?;
-        self.write_body(stream, protocol).await
-    }
+async fn write<T: PacketT>(
+    p: &T,
+    stream: &mut impl OpenRGBWritableStream,
+    protocol: u32,
+) -> Result<(), OpenRGBError> {
+    println!("writing header");
+    let header = p.header();
+    stream
+        .write_header(
+            protocol,
+            header.device_id,
+            header.packet_id,
+            p.size(protocol),
+        )
+        .await?;
+    p.write_body(stream, protocol).await
 }
 
 pub struct Header {
