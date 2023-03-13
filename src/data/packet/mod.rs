@@ -9,93 +9,9 @@ use crate::OpenRGBError;
 use crate::OpenRGBError::ProtocolError;
 
 use super::OpenRGBWritable;
-use packets::*;
+pub use other_packets::*;
 
-mod other_packets;
-mod packets;
-
-#[enum_dispatch]
-pub enum Packet {
-    RequestProtocolVersion(RequestProtocolVersion),
-    RequestControllerCount(RequestControllerCount),
-}
-
-// trait PacketBody: Sized + OpenRGBReadable {}
-
-pub async fn read_any(
-    stream: &mut impl OpenRGBStream,
-    protocol: u32,
-) -> Result<Packet, OpenRGBError> {
-    let header = Header::read(stream, protocol).await?;
-    match header.packet_id {
-        PacketId::RequestProtocolVersion => {
-            let p = RequestProtocolVersion { header };
-            p.read(stream, protocol).await
-        }
-        PacketId::RequestControllerCount => {
-            let p = RequestControllerCount { header };
-            p.read(stream, protocol).await
-        }
-        // PacketId::RequestControllerCount => {
-        //     RequestControllerCount::read(header, stream, protocol).await
-        // }
-        // PacketId::SetClientName => {
-        //     // consume client name
-        //     // TODO: use this??
-        //     self.read_value::<String>(protocol).await;
-        //     Ok(())
-        // }
-        // PacketId::RequestControllerCount => {
-        //     // consume client protocol version
-        //     self.read_value::<String>(protocol).await;
-        //     // TODO: actually count controllers?
-        //     self.write_packet(protocol, 0, RequestControllerCount, 1u32)
-        //         .await
-        // }
-        // PacketId::RequestControllerData => stream.read_packet::<Controller>(protocol).await,
-        _ => Err(OpenRGBError::ProtocolError(format!(
-            "don't know how to respond to packet ID: {:?}",
-            header.packet_id
-        ))),
-    }
-}
-
-#[async_trait]
-pub trait PacketT: Sync {
-    async fn read(
-        self,
-        stream: &mut impl OpenRGBReadableStream,
-        protocol: u32,
-    ) -> Result<Packet, OpenRGBError>;
-
-    fn header(&self) -> &Header;
-
-    fn size(&self, protocol: u32) -> usize;
-
-    async fn write_body(
-        &self,
-        stream: &mut impl OpenRGBWritableStream,
-        protocol: u32,
-    ) -> Result<(), OpenRGBError>;
-}
-
-pub async fn write<T: PacketT>(
-    p: &T,
-    stream: &mut impl OpenRGBWritableStream,
-    protocol: u32,
-) -> Result<(), OpenRGBError> {
-    println!("writing header");
-    let header = p.header();
-    stream
-        .write_header(
-            protocol,
-            header.device_id,
-            header.packet_id,
-            p.size(protocol),
-        )
-        .await?;
-    p.write_body(stream, protocol).await
-}
+pub mod other_packets;
 
 #[derive(Default)]
 pub struct Header {

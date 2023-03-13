@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[async_trait]
-trait RequestPacket {
+pub trait RequestPacket {
     fn header(&self) -> &Header;
 
     async fn handle(
@@ -16,7 +16,7 @@ trait RequestPacket {
         // host *controller.Host,
         // device *hid.Device,
         stream: &mut impl OpenRGBWritableStream,
-    ) -> Option<OpenRGBError>
+    ) -> Result<(), OpenRGBError>
     where
         Self: Sized;
 }
@@ -26,22 +26,11 @@ trait ResponsePacket: OpenRGBWritable {
     fn header(&self) -> &Header;
 }
 
-async fn read_any(
+pub async fn read_any(
     stream: &mut impl OpenRGBReadableStream,
     protocol: u32,
 ) -> Result<Box<dyn RequestPacket>, OpenRGBError> {
     let header = stream.read_value::<Header>(protocol).await?;
-
-    // let s: Box<dyn RequestPacket> = match header.packet_id {
-    //     PacketId::RequestControllerCount => RequestControllerCount::newp(header),
-    //     PacketId::RequestControllerData => RequestControllerData::newp(header),
-
-    //     _ => Err(OpenRGBError::UnsupportedOperation {
-    //         operation: "handle packet".to_string(),
-    //         current_protocol_version: 1,
-    //         min_protocol_version: 199,
-    //     }),
-    // }?;
 
     match header.packet_id {
         PacketId::RequestControllerCount => {
@@ -59,7 +48,7 @@ async fn read_any(
     }
 }
 
-struct Packet<T: PacketBody> {
+pub struct Packet<T: PacketBody> {
     header: Header,
     body: T,
 }
@@ -75,7 +64,7 @@ impl<T: RequestPacketBody> RequestPacket for Packet<T> {
         // host *controller.Host,
         // device *hid.Device,
         stream: &mut impl OpenRGBWritableStream,
-    ) -> Option<OpenRGBError>
+    ) -> Result<(), OpenRGBError>
     where
         Self: Sized,
     {
@@ -123,7 +112,7 @@ trait RequestPacketBody: PacketBody {
         // host *controller.Host,
         // device *hid.Device,
         stream: &mut impl OpenRGBWritableStream,
-    ) -> Option<OpenRGBError>
+    ) -> Result<(), OpenRGBError>
     where
         Self: Sized;
 }
@@ -147,7 +136,7 @@ impl RequestPacketBody for RequestControllerCount {
         // host *controller.Host,
         // device *hid.Device,
         stream: &mut impl OpenRGBWritableStream,
-    ) -> Option<OpenRGBError>
+    ) -> Result<(), OpenRGBError>
     where
         Self: Sized,
     {
@@ -206,7 +195,7 @@ impl RequestPacketBody for RequestControllerData {
         // host *controller.Host,
         // device *hid.Device,
         stream: &mut impl OpenRGBWritableStream,
-    ) -> Option<OpenRGBError>
+    ) -> Result<(), OpenRGBError>
     where
         Self: Sized,
     {
