@@ -14,6 +14,7 @@ pub static MAGIC: [u8; 4] = *b"ORGB";
 #[async_trait]
 pub trait OpenRGBReadableStream: AsyncReadExt + Sized + Send + Sync + Unpin {
     async fn read_value<T: OpenRGBReadable>(&mut self, protocol: u32) -> Result<T, OpenRGBError> {
+        println!("reading value {:?}", std::any::type_name::<T>());
         T::read(self, protocol).await
     }
 
@@ -150,8 +151,8 @@ pub trait OpenRGBStream: OpenRGBReadableStream + OpenRGBWritableStream {
 
         // why? why do i have to do this??
         match p {
-            Packet::RequestProtocolVersion(p) => p.write(self, protocol).await,
-            Packet::RequestControllerCount(p) => p.write(self, protocol).await,
+            Packet::RequestProtocolVersion(p) => packet::write(&p, self, protocol).await,
+            Packet::RequestControllerCount(p) => packet::write(&p, self, protocol).await,
         }
 
         // let poop: Box<dyn PacketT> = Box::new(p);

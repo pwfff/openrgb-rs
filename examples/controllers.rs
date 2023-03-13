@@ -9,6 +9,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // query controllers count
     let controllers = client.get_controller_count().await?;
+    println!("got {} controllers", controllers);
 
     // query and print each controller data
     for controller_id in 0..controllers {

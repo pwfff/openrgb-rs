@@ -25,6 +25,7 @@ rgb = "0.8.32"
 thiserror = "1.0.31"
 tokio = { version = "1.18.2", default-features = false, features = ["rt-multi-thread", "net", "sync", "io-util"] }
 enum_dispatch = "0.3.11"
+enum_delegate = "0.2.0"
 
 [dependencies.macros]
 path = "./macros"

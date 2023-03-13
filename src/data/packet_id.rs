@@ -10,9 +10,10 @@ use crate::OpenRGBError::{self, ProtocolError};
 /// OpenRGB protocol packet ID.
 ///
 /// See [Open SDK documentation](https://gitlab.com/CalcProgrammer1/OpenRGB/-/wikis/OpenRGB-SDK-Documentation#packet-ids) for more information.
-#[derive(Primitive, PartialEq, Debug, Copy, Clone)]
+#[derive(Primitive, PartialEq, Debug, Copy, Clone, Default)]
 pub enum PacketId {
     /// Request RGBController device count from server.
+    #[default]
     RequestControllerCount = 0,
 
     /// Request RGBController data block.

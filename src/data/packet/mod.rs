@@ -11,6 +11,7 @@ use crate::OpenRGBError::ProtocolError;
 use super::OpenRGBWritable;
 use packets::*;
 
+mod other_packets;
 mod packets;
 
 #[enum_dispatch]
@@ -62,7 +63,7 @@ pub async fn read_any(
 #[async_trait]
 pub trait PacketT: Sync {
     async fn read(
-        &self,
+        self,
         stream: &mut impl OpenRGBReadableStream,
         protocol: u32,
     ) -> Result<Packet, OpenRGBError>;
@@ -78,7 +79,7 @@ pub trait PacketT: Sync {
     ) -> Result<(), OpenRGBError>;
 }
 
-async fn write<T: PacketT>(
+pub async fn write<T: PacketT>(
     p: &T,
     stream: &mut impl OpenRGBWritableStream,
     protocol: u32,
@@ -96,6 +97,7 @@ async fn write<T: PacketT>(
     p.write_body(stream, protocol).await
 }
 
+#[derive(Default)]
 pub struct Header {
     pub device_id: u32,
     pub packet_id: PacketId,

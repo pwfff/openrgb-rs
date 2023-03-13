@@ -11,12 +11,12 @@ pub struct RequestProtocolVersion {
 #[async_trait]
 impl PacketT for RequestProtocolVersion {
     async fn read(
-        &self,
+        self,
         stream: &mut impl OpenRGBReadableStream,
         protocol: u32,
     ) -> Result<Packet, OpenRGBError> {
         u32::read(stream, protocol).await?;
-        Ok(Packet::RequestProtocolVersion(*self))
+        Ok(Packet::RequestProtocolVersion(self))
     }
 
     fn header(&self) -> &Header {
@@ -45,11 +45,11 @@ pub struct RequestControllerCount {
 #[async_trait]
 impl PacketT for RequestControllerCount {
     async fn read(
-        &self,
+        self,
         stream: &mut impl OpenRGBReadableStream,
         protocol: u32,
     ) -> Result<Packet, OpenRGBError> {
-        Ok(Packet::RequestControllerCount(*self))
+        Ok(Packet::RequestControllerCount(self))
     }
 
     fn header(&self) -> &Header {
