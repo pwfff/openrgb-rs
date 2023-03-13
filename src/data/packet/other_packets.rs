@@ -92,6 +92,7 @@ impl<T: RequestPacketBody<U>, U: OpenRGBStream> RequestPacket<U> for Packet<T> {
         stream: &mut U,
         protocol: u32,
     ) -> Result<(), OpenRGBError> {
+        self.header = header;
         self.body = Some(stream.read_value(protocol).await?);
         Ok(())
     }
