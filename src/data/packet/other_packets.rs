@@ -7,14 +7,11 @@ use crate::{
     OpenRGBError,
 };
 
+/// RequestPacket is anything that has a header, can be read, and can be handled
 #[async_trait]
 pub trait RequestPacket<T>: Sync + Send {
-    fn header(&self) -> &Header;
-
     async fn read(
         &mut self,
-        // host *controller.Host,
-        // device *hid.Device,
         header: Header,
         stream: &mut T,
         protocol: u32,
@@ -80,10 +77,6 @@ where
 
 #[async_trait]
 impl<T: RequestPacketBody<U>, U: OpenRGBStream> RequestPacket<U> for Packet<T> {
-    fn header(&self) -> &Header {
-        &self.header
-    }
-
     async fn read(
         &mut self,
         // host *controller.Host,
