@@ -41,7 +41,7 @@ pub async fn read_any<T: OpenRGBStream>(
         }
 
         _ => Err(OpenRGBError::UnsupportedOperation {
-            operation: "handle packet".to_string(),
+            operation: format!("{:?}", header.packet_id),
             current_protocol_version: 1,
             min_protocol_version: 199,
         }),
@@ -109,9 +109,7 @@ trait RequestPacketBody<T: OpenRGBStream>: PacketBody {
         // host *controller.Host,
         // device *hid.Device,
         stream: &mut T,
-    ) -> Result<(), OpenRGBError>
-    where
-        Self: Sized;
+    ) -> Result<(), OpenRGBError>;
 }
 
 // async fn read<T: PacketBody>(
@@ -143,10 +141,7 @@ impl OpenRGBReadable for RequestControllerCount {
     async fn read(
         stream: &mut impl OpenRGBReadableStream,
         protocol: u32,
-    ) -> Result<Self, OpenRGBError>
-    where
-        Self: Sized,
-    {
+    ) -> Result<Self, OpenRGBError> {
         Ok(Self {})
     }
 }
@@ -160,10 +155,7 @@ impl OpenRGBWritable for RequestControllerCount {
         self,
         stream: &mut impl OpenRGBWritableStream,
         protocol: u32,
-    ) -> Result<(), OpenRGBError>
-    where
-        Self: Sized,
-    {
+    ) -> Result<(), OpenRGBError> {
         todo!()
     }
 }
@@ -199,10 +191,7 @@ impl OpenRGBReadable for RequestControllerData {
     async fn read(
         stream: &mut impl OpenRGBReadableStream,
         protocol: u32,
-    ) -> Result<Self, OpenRGBError>
-    where
-        Self: Sized,
-    {
+    ) -> Result<Self, OpenRGBError> {
         let controller = stream.read_value(protocol).await?;
         Ok(Self { controller })
     }
@@ -217,10 +206,7 @@ impl OpenRGBWritable for RequestControllerData {
         self,
         stream: &mut impl OpenRGBWritableStream,
         protocol: u32,
-    ) -> Result<(), OpenRGBError>
-    where
-        Self: Sized,
-    {
+    ) -> Result<(), OpenRGBError> {
         todo!()
     }
 }
