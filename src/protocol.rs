@@ -5,7 +5,7 @@ use tokio::net::TcpStream;
 
 use OpenRGBError::*;
 
-use crate::data::packet::{self, read_any, RequestHandler};
+use crate::data::packet::{self, read_any};
 use crate::data::{OpenRGBReadable, OpenRGBWritable, PacketId};
 use crate::OpenRGBError;
 
@@ -145,8 +145,8 @@ pub trait OpenRGBStream: OpenRGBReadableStream + OpenRGBWritableStream {
 
     async fn handle(&mut self, protocol: u32) -> Result<(), OpenRGBError> {
         let p = read_any(self, protocol).await?;
-        p.handle();
-        Ok(())
+        let r = p.handle(self).await?;
+        Ok(r)
         // no compile??
         // let poop: dyn PacketT = p;
         // poop.write(self, protocol)
