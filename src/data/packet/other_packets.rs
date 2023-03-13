@@ -24,15 +24,14 @@ pub trait RequestPacket<T>: Sync + Send {
         // host *controller.Host,
         // device *hid.Device,
         stream: &mut T,
+        protocol: u32,
     ) -> Result<(), OpenRGBError>
     where
         T: OpenRGBWritableStream;
 }
 
 #[async_trait]
-trait ResponsePacket: OpenRGBWritable {
-    fn header(&self) -> &Header;
-}
+trait ResponsePacket: OpenRGBWritable {}
 
 pub async fn read_any<T: OpenRGBStream>(
     stream: &mut T,
@@ -95,8 +94,15 @@ impl<T: RequestPacketBody<U>, U: OpenRGBStream> RequestPacket<U> for Packet<T> {
         // host *controller.Host,
         // device *hid.Device,
         stream: &mut U,
+        protocol: u32,
     ) -> Result<(), OpenRGBError> {
-        todo!()
+        let resp = self
+            .body
+            .as_ref()
+            .ok_or(OpenRGBError::ProtocolError("()".to_string()))?
+            .handle(stream)
+            .await?;
+        stream.write_value(resp, protocol).await
     }
 }
 
@@ -128,12 +134,14 @@ pub trait PacketBody: OpenRGBReadable + OpenRGBWritable {}
 
 #[async_trait]
 trait RequestPacketBody<T: OpenRGBStream>: PacketBody {
+    type Response: ResponsePacket;
+
     async fn handle(
         &self,
         // host *controller.Host,
         // device *hid.Device,
         stream: &mut T,
-    ) -> Result<(), OpenRGBError>;
+    ) -> Result<Self::Response, OpenRGBError>;
 }
 
 // async fn read<T: PacketBody>(
@@ -150,12 +158,14 @@ impl PacketBody for RequestControllerCount {}
 
 #[async_trait]
 impl<T: OpenRGBStream> RequestPacketBody<T> for RequestControllerCount {
+    type Response = RequestControllerCountResponse;
+
     async fn handle(
         &self,
         // host *controller.Host,
         // device *hid.Device,
         stream: &mut T,
-    ) -> Result<(), OpenRGBError> {
+    ) -> Result<Self::Response, OpenRGBError> {
         todo!()
     }
 }
@@ -188,8 +198,23 @@ pub struct RequestControllerCountResponse {
     count: u32,
 }
 
-// #[async_trait]
-// impl OpenRGBWritable for RequestControllerCountResponse {}
+#[async_trait]
+impl ResponsePacket for RequestControllerCountResponse {}
+
+#[async_trait]
+impl OpenRGBWritable for RequestControllerCountResponse {
+    fn size(&self, protocol: u32) -> usize {
+        0
+    }
+
+    async fn write(
+        self,
+        stream: &mut impl OpenRGBWritableStream,
+        protocol: u32,
+    ) -> Result<(), OpenRGBError> {
+        stream.write_value(0 as u32, protocol).await
+    }
+}
 
 pub struct RequestControllerData {
     controller: Controller,
@@ -200,12 +225,14 @@ impl PacketBody for RequestControllerData {}
 
 #[async_trait]
 impl<T: OpenRGBStream> RequestPacketBody<T> for RequestControllerData {
+    type Response = RequestControllerCountResponse;
+
     async fn handle(
         &self,
         // host *controller.Host,
         // device *hid.Device,
         stream: &mut T,
-    ) -> Result<(), OpenRGBError> {
+    ) -> Result<Self::Response, OpenRGBError> {
         todo!()
     }
 }
