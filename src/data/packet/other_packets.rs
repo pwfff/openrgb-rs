@@ -225,6 +225,7 @@ impl PacketBody for RequestControllerData {}
 
 #[async_trait]
 impl<T: OpenRGBStream> RequestPacketBody<T> for RequestControllerData {
+    // TODO: baaaad, fix
     type Response = RequestControllerCountResponse;
 
     async fn handle(
