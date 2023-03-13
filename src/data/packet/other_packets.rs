@@ -16,9 +16,7 @@ pub trait RequestPacket {
         // host *controller.Host,
         // device *hid.Device,
         stream: &mut impl OpenRGBWritableStream,
-    ) -> Result<(), OpenRGBError>
-    where
-        Self: Sized;
+    ) -> Result<(), OpenRGBError>;
 }
 
 #[async_trait]
@@ -64,10 +62,7 @@ impl<T: RequestPacketBody> RequestPacket for Packet<T> {
         // host *controller.Host,
         // device *hid.Device,
         stream: &mut impl OpenRGBWritableStream,
-    ) -> Result<(), OpenRGBError>
-    where
-        Self: Sized,
-    {
+    ) -> Result<(), OpenRGBError> {
         todo!()
     }
 }
@@ -136,10 +131,7 @@ impl RequestPacketBody for RequestControllerCount {
         // host *controller.Host,
         // device *hid.Device,
         stream: &mut impl OpenRGBWritableStream,
-    ) -> Result<(), OpenRGBError>
-    where
-        Self: Sized,
-    {
+    ) -> Result<(), OpenRGBError> {
         todo!()
     }
 }
@@ -195,10 +187,7 @@ impl RequestPacketBody for RequestControllerData {
         // host *controller.Host,
         // device *hid.Device,
         stream: &mut impl OpenRGBWritableStream,
-    ) -> Result<(), OpenRGBError>
-    where
-        Self: Sized,
-    {
+    ) -> Result<(), OpenRGBError> {
         todo!()
     }
 }
