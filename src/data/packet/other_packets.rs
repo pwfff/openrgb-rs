@@ -11,6 +11,17 @@ use crate::{
 pub trait RequestPacket<T>: Sync + Send {
     fn header(&self) -> &Header;
 
+    async fn read(
+        &mut self,
+        // host *controller.Host,
+        // device *hid.Device,
+        header: Header,
+        stream: &mut T,
+        protocol: u32,
+    ) -> Result<(), OpenRGBError>
+    where
+        T: OpenRGBReadableStream;
+
     async fn handle(
         &self,
         // host *controller.Host,
@@ -32,31 +43,57 @@ pub async fn read_any<T: OpenRGBStream>(
 ) -> Result<Box<dyn RequestPacket<T>>, OpenRGBError> {
     let header = stream.read_value::<Header>(protocol).await?;
 
-    match header.packet_id {
-        PacketId::RequestControllerCount => {
-            RequestControllerCount::new(stream, header, protocol).await
-        }
-        PacketId::RequestControllerData => {
-            RequestControllerData::new(stream, header, protocol).await
-        }
-
+    let mut p = match header.packet_id {
+        PacketId::RequestControllerCount => Ok(Packet::<RequestControllerCount>::new()),
+        PacketId::RequestControllerData => Ok(Packet::<RequestControllerCount>::new()),
         _ => Err(OpenRGBError::UnsupportedOperation {
             operation: format!("{:?}", header.packet_id),
             current_protocol_version: 1,
             min_protocol_version: 199,
         }),
-    }
+    }?;
+
+    p.read(header, stream, protocol).await?;
+
+    Ok(p)
 }
 
-pub struct Packet<T: PacketBody> {
+pub struct Packet<T>
+where
+    T: PacketBody,
+{
     header: Header,
-    body: T,
+    body: Option<T>,
+}
+
+impl<T> Packet<T>
+where
+    T: PacketBody,
+{
+    fn new() -> Box<Self> {
+        Box::new(Self {
+            header: Header::default(),
+            body: None,
+        })
+    }
 }
 
 #[async_trait]
 impl<T: RequestPacketBody<U>, U: OpenRGBStream> RequestPacket<U> for Packet<T> {
     fn header(&self) -> &Header {
         &self.header
+    }
+
+    async fn read(
+        &mut self,
+        // host *controller.Host,
+        // device *hid.Device,
+        header: Header,
+        stream: &mut U,
+        protocol: u32,
+    ) -> Result<(), OpenRGBError> {
+        self.body = Some(stream.read_value(protocol).await?);
+        Ok(())
     }
 
     async fn handle(
@@ -72,7 +109,10 @@ impl<T: RequestPacketBody<U>, U: OpenRGBStream> RequestPacket<U> for Packet<T> {
 #[async_trait]
 impl<T: PacketBody> OpenRGBWritable for Packet<T> {
     fn size(&self, protocol: u32) -> usize {
-        self.body.size(protocol)
+        match &self.body {
+            Some(body) => body.size(protocol),
+            None => 0,
+        }
     }
 
     async fn write(
@@ -80,7 +120,12 @@ impl<T: PacketBody> OpenRGBWritable for Packet<T> {
         stream: &mut impl OpenRGBWritableStream,
         protocol: u32,
     ) -> Result<(), OpenRGBError> {
-        self.body.write(stream, protocol).await
+        match self.body {
+            Some(body) => body.write(stream, protocol).await,
+            None => Err(OpenRGBError::ProtocolError(
+                "attempted to write before setting body".to_string(),
+            )),
+        }
     }
 }
 
@@ -89,21 +134,6 @@ pub trait PacketBody: OpenRGBReadable + OpenRGBWritable {}
 
 #[async_trait]
 trait RequestPacketBody<T: OpenRGBStream>: PacketBody {
-    async fn new(
-        stream: &mut T,
-        header: Header,
-        protocol: u32,
-    ) -> Result<Box<dyn RequestPacket<T>>, OpenRGBError>
-    where
-        Self: 'static,
-    {
-        let mut p = Packet::<Self> {
-            header: header,
-            body: stream.read_value(protocol).await?,
-        };
-        Ok(Box::new(p))
-    }
-
     async fn handle(
         &self,
         // host *controller.Host,
