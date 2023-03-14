@@ -6,6 +6,8 @@ use tokio::net::TcpListener;
 use tokio::net::TcpStream;
 use tokio::net::ToSocketAddrs;
 
+pub mod handler;
+
 pub struct OpenRGBServer {
     // controller: Arc<Mutex<Controller>>,
     inner: TcpListener,
