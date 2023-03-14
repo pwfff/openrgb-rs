@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use super::header::Header;
 use crate::{
     data::{Controller, OpenRGBReadable, OpenRGBWritable, PacketId},
-    protocol::{OpenRGBReadableStream, OpenRGBStream, OpenRGBWritableStream},
+    protocol::{OpenRGBReadableStream, OpenRGBWritableStream},
     OpenRGBError,
 };
 
@@ -65,20 +65,15 @@ pub trait RequestPacketReader: Sync + Send {
 }
 
 #[async_trait]
-pub trait RequestPacketHandler: Sync + Send {
+pub trait RequestPacketHandler<P: RequestPacketBody>: Sync + Send {
     /// handles the packet, returning the response packet.
     /// maybe this should on the host though...
     async fn handle<S: OpenRGBWritableStream>(
-        &self,
-        // host *controller.Host,
-        // device *hid.Device,
         stream: &mut S,
         protocol: u32,
-    ) -> Result<(), OpenRGBError>;
+        packet: &RequestPacket<P>,
+    ) -> Result<P::Response, OpenRGBError>;
 }
-
-#[async_trait]
-pub trait ResponsePacket: OpenRGBWritable {}
 
 #[async_trait]
 impl<T: RequestPacketBody> RequestPacketReader for RequestPacket<T> {
@@ -100,26 +95,27 @@ impl<T: RequestPacketBody> RequestPacketReader for RequestPacket<T> {
 }
 
 #[async_trait]
-impl<T: RequestPacketBody> RequestPacketHandler for RequestPacket<T> {
+impl<T: RequestPacketBody> RequestPacketHandler<T> for RequestPacket<T> {
     async fn handle<S>(
-        &self,
-        // host *controller.Host,
-        // device *hid.Device,
         stream: &mut S,
         protocol: u32,
-    ) -> Result<(), OpenRGBError>
+        packet: &RequestPacket<T>,
+    ) -> Result<T::Response, OpenRGBError>
     where
         S: OpenRGBWritableStream,
     {
-        let resp = self
+        packet
             .body
             .as_ref()
             .ok_or(OpenRGBError::ProtocolError("()".to_string()))?
             .handle(stream)
-            .await?;
-        stream.write_value(resp, protocol).await
+            .await
+        // stream.write_value(resp, protocol).await
     }
 }
+
+#[async_trait]
+pub trait ResponsePacket: OpenRGBWritable {}
 
 #[async_trait]
 impl<T: PacketBody> OpenRGBWritable for RequestPacket<T> {

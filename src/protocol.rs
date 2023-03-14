@@ -145,7 +145,7 @@ pub trait OpenRGBStream: OpenRGBReadableStream + OpenRGBWritableStream {
 
     async fn handle(&mut self, protocol: u32) -> Result<(), OpenRGBError> {
         let p = read_any(self, protocol).await?;
-        let r = p.handle(self, protocol).await?;
+        let r = RequestPacket<p.body>::handle(self, protocol, p).await?;
         Ok(r)
         // no compile??
         // let poop: dyn PacketT = p;
