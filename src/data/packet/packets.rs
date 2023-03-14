@@ -7,41 +7,16 @@ use crate::{
     OpenRGBError,
 };
 
-/// RequestPacket is anything that has a header, can be read, and can be handled
-#[async_trait]
-pub trait RequestPacket<T>: Sync + Send {
-    async fn read(
-        &mut self,
-        header: Header,
-        stream: &mut T,
-        protocol: u32,
-    ) -> Result<(), OpenRGBError>
-    where
-        T: OpenRGBReadableStream;
-
-    async fn handle(
-        &self,
-        // host *controller.Host,
-        // device *hid.Device,
-        stream: &mut T,
-        protocol: u32,
-    ) -> Result<(), OpenRGBError>
-    where
-        T: OpenRGBWritableStream;
-}
-
-#[async_trait]
-trait ResponsePacket: OpenRGBWritable {}
-
-pub async fn read_any<T: OpenRGBStream>(
+/// read_any reads a full packet from the readable stream.
+pub async fn read_any<T: OpenRGBReadableStream>(
     stream: &mut T,
     protocol: u32,
-) -> Result<Box<dyn RequestPacket<T>>, OpenRGBError> {
+) -> Result<RequestPacket<impl RequestPacketBody>, OpenRGBError> {
     let header = stream.read_value::<Header>(protocol).await?;
 
     let mut p = match header.packet_id {
-        PacketId::RequestControllerCount => Ok(Packet::<RequestControllerCount>::new()),
-        PacketId::RequestControllerData => Ok(Packet::<RequestControllerCount>::new()),
+        PacketId::RequestControllerCount => Ok(RequestPacket::<RequestControllerCount>::new()),
+        PacketId::RequestControllerData => Ok(RequestPacket::<RequestControllerCount>::new()),
         _ => Err(OpenRGBError::UnsupportedOperation {
             operation: format!("{:?}", header.packet_id),
             current_protocol_version: 1,
@@ -54,48 +29,88 @@ pub async fn read_any<T: OpenRGBStream>(
     Ok(p)
 }
 
-pub struct Packet<T>
+/// Packet<T> could be a request or a response packet
+pub struct RequestPacket<T>
 where
-    T: PacketBody,
+    T: RequestPacketBody,
 {
     header: Header,
     body: Option<T>,
 }
 
-impl<T> Packet<T>
+impl<T> RequestPacket<T>
 where
-    T: PacketBody,
+    T: RequestPacketBody,
 {
-    fn new() -> Box<Self> {
-        Box::new(Self {
+    // default implementation for constructing an empty packet, usually for reading.
+    // header will be set when the packet is read.
+    fn new() -> Self {
+        Self {
             header: Header::default(),
             body: None,
-        })
+        }
     }
 }
 
+/// RequestPacketReader is anything that has a header and can be read.
 #[async_trait]
-impl<T: RequestPacketBody<U>, U: OpenRGBStream> RequestPacket<U> for Packet<T> {
-    async fn read(
+pub trait RequestPacketReader: Sync + Send {
+    /// reads the packet, setting header and body.
+    async fn read<S: OpenRGBReadableStream>(
+        &mut self,
+        header: Header,
+        stream: &mut S,
+        protocol: u32,
+    ) -> Result<(), OpenRGBError>;
+}
+
+#[async_trait]
+pub trait RequestPacketHandler: Sync + Send {
+    /// handles the packet, returning the response packet.
+    /// maybe this should on the host though...
+    async fn handle<S: OpenRGBWritableStream>(
+        &self,
+        // host *controller.Host,
+        // device *hid.Device,
+        stream: &mut S,
+        protocol: u32,
+    ) -> Result<(), OpenRGBError>;
+}
+
+#[async_trait]
+pub trait ResponsePacket: OpenRGBWritable {}
+
+#[async_trait]
+impl<T: RequestPacketBody> RequestPacketReader for RequestPacket<T> {
+    async fn read<S>(
         &mut self,
         // host *controller.Host,
         // device *hid.Device,
         header: Header,
-        stream: &mut U,
+        stream: &mut S,
         protocol: u32,
-    ) -> Result<(), OpenRGBError> {
+    ) -> Result<(), OpenRGBError>
+    where
+        S: OpenRGBReadableStream,
+    {
         self.header = header;
         self.body = Some(stream.read_value(protocol).await?);
         Ok(())
     }
+}
 
-    async fn handle(
+#[async_trait]
+impl<T: RequestPacketBody> RequestPacketHandler for RequestPacket<T> {
+    async fn handle<S>(
         &self,
         // host *controller.Host,
         // device *hid.Device,
-        stream: &mut U,
+        stream: &mut S,
         protocol: u32,
-    ) -> Result<(), OpenRGBError> {
+    ) -> Result<(), OpenRGBError>
+    where
+        S: OpenRGBWritableStream,
+    {
         let resp = self
             .body
             .as_ref()
@@ -107,7 +122,7 @@ impl<T: RequestPacketBody<U>, U: OpenRGBStream> RequestPacket<U> for Packet<T> {
 }
 
 #[async_trait]
-impl<T: PacketBody> OpenRGBWritable for Packet<T> {
+impl<T: PacketBody> OpenRGBWritable for RequestPacket<T> {
     fn size(&self, protocol: u32) -> usize {
         match &self.body {
             Some(body) => body.size(protocol),
@@ -130,41 +145,35 @@ impl<T: PacketBody> OpenRGBWritable for Packet<T> {
 }
 
 #[async_trait]
-pub trait PacketBody: OpenRGBReadable + OpenRGBWritable {}
+pub trait PacketBody: RequestPacketBody + ResponsePacketBody {}
 
 #[async_trait]
-trait RequestPacketBody<T: OpenRGBStream>: PacketBody {
+pub trait RequestPacketBody: OpenRGBReadable {
     type Response: ResponsePacket;
 
-    async fn handle(
+    async fn handle<S>(
         &self,
         // host *controller.Host,
         // device *hid.Device,
-        stream: &mut T,
-    ) -> Result<Self::Response, OpenRGBError>;
+        stream: &mut S,
+    ) -> Result<Self::Response, OpenRGBError>
+    where
+        S: OpenRGBWritableStream;
 }
 
-// async fn read<T: PacketBody>(
-//     header: Header,
-//     stream: &mut impl OpenRGBReadableStream,
-//     protocol: u32,
-// ) -> Result<T, OpenRGBError> {
-// }
+pub trait ResponsePacketBody: OpenRGBWritable {}
 
 pub struct RequestControllerCount {}
 
 #[async_trait]
-impl PacketBody for RequestControllerCount {}
-
-#[async_trait]
-impl<T: OpenRGBStream> RequestPacketBody<T> for RequestControllerCount {
+impl RequestPacketBody for RequestControllerCount {
     type Response = RequestControllerCountResponse;
 
-    async fn handle(
+    async fn handle<S: OpenRGBWritableStream>(
         &self,
         // host *controller.Host,
         // device *hid.Device,
-        stream: &mut T,
+        stream: &mut S,
     ) -> Result<Self::Response, OpenRGBError> {
         todo!()
     }
@@ -185,6 +194,7 @@ impl OpenRGBWritable for RequestControllerCount {
     fn size(&self, protocol: u32) -> usize {
         todo!()
     }
+
     async fn write(
         self,
         stream: &mut impl OpenRGBWritableStream,
@@ -221,18 +231,18 @@ pub struct RequestControllerData {
 }
 
 #[async_trait]
-impl PacketBody for RequestControllerData {}
+impl ResponsePacketBody for RequestControllerData {}
 
 #[async_trait]
-impl<T: OpenRGBStream> RequestPacketBody<T> for RequestControllerData {
+impl RequestPacketBody for RequestControllerData {
     // TODO: baaaad, fix
     type Response = RequestControllerCountResponse;
 
-    async fn handle(
+    async fn handle<S: OpenRGBWritableStream>(
         &self,
         // host *controller.Host,
         // device *hid.Device,
-        stream: &mut T,
+        stream: &mut S,
     ) -> Result<Self::Response, OpenRGBError> {
         todo!()
     }

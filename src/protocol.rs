@@ -5,7 +5,7 @@ use tokio::net::TcpStream;
 
 use OpenRGBError::*;
 
-use crate::data::packet::{self, read_any};
+use crate::data::packet::*;
 use crate::data::{OpenRGBReadable, OpenRGBWritable, PacketId};
 use crate::OpenRGBError;
 
