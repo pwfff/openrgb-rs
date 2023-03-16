@@ -1,0 +1,26 @@
+[package]
+name = "openrgb-data"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+smallvec = "1.10.0"
+flagset = "0.4.3"
+enum-primitive-derive = "0.2.2"
+genio = { git = "https://github.com/Kixunil/genio", features = ["byteorder"] }
+anyhow = { version = "1.0", default-features = false }
+byteorder = { version = "1.4.3", default-features = false }
+
+[dependencies.num-traits]
+version = "0.2.15"
+
+[dependencies.postcard]
+version = "1.0.4"
+features = ["use-defmt"]
+
+[dependencies.serde]
+version = "1.0"
+default-features = false
+
+[dependencies.openrgb-macros]
+path = "../macros"
