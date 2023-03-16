@@ -1,6 +1,6 @@
 use crate::protocol::OpenRGBReadableSync;
-use crate::OpenRGBError;
 use crate::{Color, DeviceType, Mode, OpenRGBReadable, Zone, LED};
+use crate::{OpenRGBError, OpenRGBString};
 use smallvec::SmallVec;
 
 const MAX_MODES: usize = 128;
@@ -12,27 +12,27 @@ const MAX_COLORS: usize = 128;
 ///
 /// See [Open SDK documentation](https://gitlab.com/CalcProgrammer1/OpenRGB/-/wikis/OpenRGB-SDK-Documentation#net_packet_id_request_controller_data) for more information.
 #[derive(Debug, Eq, PartialEq)]
-pub struct Controller<'a> {
+pub struct Controller {
     /// Controller type.
     pub r#type: DeviceType,
 
     /// Controller name.
-    pub name: &'a str,
+    pub name: OpenRGBString,
 
     /// Controller vendor.
-    pub vendor: &'a str,
+    pub vendor: OpenRGBString,
 
     /// Controller description.
-    pub description: &'a str,
+    pub description: OpenRGBString,
 
     /// Controller version.
-    pub version: &'a str,
+    pub version: OpenRGBString,
 
     /// Controller serial.
-    pub serial: &'a str,
+    pub serial: OpenRGBString,
 
     /// Controller location.
-    pub location: &'a str,
+    pub location: OpenRGBString,
 
     pub _num_modes: u16,
 
@@ -40,17 +40,17 @@ pub struct Controller<'a> {
     pub active_mode: i32,
 
     /// Controller modes.
-    pub modes: SmallVec<[Mode<'a>; MAX_MODES]>,
+    pub modes: SmallVec<[Mode; MAX_MODES]>,
 
     pub _num_zones: u16,
 
     /// Controller zones.
-    pub zones: SmallVec<[Zone<'a>; MAX_ZONES]>,
+    pub zones: SmallVec<[Zone; MAX_ZONES]>,
 
     pub _num_leds: u16,
 
     /// Controller LEDs.
-    pub leds: SmallVec<[LED<'a>; MAX_LEDS]>,
+    pub leds: SmallVec<[LED; MAX_LEDS]>,
 
     pub _num_colors: u16,
 
@@ -58,7 +58,7 @@ pub struct Controller<'a> {
     pub colors: SmallVec<[Color; MAX_COLORS]>,
 }
 
-impl<'a> OpenRGBReadable for Controller<'a> {
+impl OpenRGBReadable for Controller {
     fn read(stream: &mut impl OpenRGBReadableSync, protocol: u32) -> Result<Self, OpenRGBError> {
         let _data_size = stream.read_value::<u32>(protocol)?;
         let r#type = stream.read_value(protocol)?;

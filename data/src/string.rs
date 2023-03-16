@@ -31,7 +31,7 @@ impl OpenRGBWritable for OpenRGBString {
     }
 }
 
-impl<'a> OpenRGBReadable for &'a OpenRGBString {
+impl OpenRGBReadable for OpenRGBString {
     fn read(stream: &mut impl OpenRGBReadableSync, protocol: u32) -> Result<Self, OpenRGBError> {
         let len = stream.read_value::<u16>(protocol)?;
         // 1k should be enough for everybody
@@ -40,7 +40,7 @@ impl<'a> OpenRGBReadable for &'a OpenRGBString {
             .read_exact(&mut buf)
             .map_err(|_| OpenRGBError::CommunicationError())?;
         buf.pop();
-        Ok(&OpenRGBString {
+        Ok(OpenRGBString {
             data: buf,
             len: len,
         })

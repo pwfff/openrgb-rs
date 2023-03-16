@@ -1,7 +1,7 @@
 use smallvec::SmallVec;
 
 use crate::protocol::OpenRGBReadableSync;
-use crate::OpenRGBError;
+use crate::{OpenRGBError, OpenRGBString};
 use crate::{OpenRGBReadable, ZoneType};
 
 const MAX_LEDS: usize = 2048;
@@ -21,9 +21,9 @@ pub struct Matrix {
 ///
 /// See [Open SDK documentation](https://gitlab.com/CalcProgrammer1/OpenRGB/-/wikis/OpenRGB-SDK-Documentation#zone-data) for more information.
 #[derive(Debug, Eq, PartialEq)]
-pub struct Zone<'a> {
+pub struct Zone {
     /// Zone name.
-    pub name: &'a str,
+    pub name: OpenRGBString,
 
     /// Zone type.
     pub r#type: ZoneType,
@@ -41,7 +41,7 @@ pub struct Zone<'a> {
     pub matrix: Option<Matrix>,
 }
 
-impl<'a> OpenRGBReadable for Zone<'a> {
+impl OpenRGBReadable for Zone {
     fn read(stream: &mut impl OpenRGBReadableSync, protocol: u32) -> Result<Self, OpenRGBError> {
         let name = stream.read_value(protocol)?;
         let r#type = stream.read_value(protocol)?;

@@ -1,18 +1,19 @@
 use crate::protocol::OpenRGBReadableSync;
 use crate::OpenRGBError;
 use crate::OpenRGBReadable;
+use crate::OpenRGBString;
 
 /// A single LED.
 #[derive(Debug, Eq, PartialEq)]
-pub struct LED<'a> {
+pub struct LED {
     /// LED name.
-    pub name: &'a str,
+    pub name: OpenRGBString,
 
     /// LED value.
     pub value: u32,
 }
 
-impl<'a> OpenRGBReadable for LED<'a> {
+impl OpenRGBReadable for LED {
     fn read(stream: &mut impl OpenRGBReadableSync, protocol: u32) -> Result<Self, OpenRGBError> {
         Ok(LED {
             name: stream.read_value(protocol)?,

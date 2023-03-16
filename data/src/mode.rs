@@ -17,9 +17,9 @@ const MAX_COLORS: usize = 128;
 ///
 /// See [Open SDK documentation](https://gitlab.com/CalcProgrammer1/OpenRGB/-/wikis/OpenRGB-SDK-Documentation#mode-data) for more information.
 #[derive(Debug, Eq, PartialEq)]
-pub struct Mode<'a> {
+pub struct Mode {
     /// Mode name.
-    pub name: &'a OpenRGBString,
+    pub name: OpenRGBString,
 
     /// Mode value.
     pub value: i32,
@@ -61,7 +61,7 @@ pub struct Mode<'a> {
     pub direction: Option<Direction>,
 }
 
-impl<'a> OpenRGBReadable for Mode<'a> {
+impl OpenRGBReadable for Mode {
     fn read(stream: &mut impl OpenRGBReadableSync, protocol: u32) -> Result<Self, OpenRGBError> {
         let name = stream.read_value(protocol)?;
         let value = stream.read_value(protocol)?;
@@ -145,7 +145,7 @@ impl<'a> OpenRGBReadable for Mode<'a> {
     }
 }
 
-impl<'a> OpenRGBWritable for Mode<'a> {
+impl OpenRGBWritable for Mode {
     fn size(&self, protocol: u32) -> usize {
         let mut size = 0;
         size += self.name.size(protocol);
