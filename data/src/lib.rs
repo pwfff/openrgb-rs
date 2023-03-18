@@ -1,7 +1,9 @@
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 //! OpenRGB data types.
 //!
 //! See [OpenRGB SDK documentation](https://gitlab.com/CalcProgrammer1/OpenRGB/-/wikis/OpenRGB-SDK-Documentation) for more information.
+extern crate alloc;
+
 pub use color::*;
 pub use color_mode::*;
 pub use controller::*;

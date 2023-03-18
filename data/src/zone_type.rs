@@ -1,3 +1,4 @@
+use alloc::format;
 use enum_primitive_derive::Primitive;
 use num_traits::FromPrimitive;
 
@@ -37,9 +38,9 @@ impl OpenRGBWritable for ZoneType {
 
 impl OpenRGBReadable for ZoneType {
     fn read(stream: &mut impl OpenRGBReadableSync, protocol: u32) -> Result<Self, OpenRGBError> {
-        stream
-            .read_value(protocol)
-            .and_then(|id| ZoneType::from_u32(id).ok_or_else(|| ProtocolError()))
+        stream.read_value(protocol).and_then(|id| {
+            ZoneType::from_u32(id).ok_or_else(|| ProtocolError(format!("error reading zone type")))
+        })
     }
 }
 

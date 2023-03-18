@@ -1,4 +1,5 @@
-use smallvec::{smallvec, SmallVec};
+use alloc::string::String;
+use alloc::vec::Vec;
 
 use crate::protocol::{OpenRGBReadableSync, OpenRGBWritableSync};
 use crate::OpenRGBError;
@@ -9,16 +10,10 @@ use crate::{OpenRGBReadable, OpenRGBWritable};
 // this seems bad...
 const MAX_STRING: usize = 0x1000;
 
-#[derive(Debug, Eq, PartialEq)]
-pub struct OpenRGBString {
-    data: SmallVec<[u8; MAX_STRING]>,
-    len: u16,
-}
-
-impl OpenRGBWritable for OpenRGBString {
+impl OpenRGBWritable for String {
     fn size(&self, _protocol: u32) -> usize {
         // len, str, null
-        2 + self.len.try_into().unwrap_or(usize::MAX) + 1
+        2 + self.len().try_into().unwrap_or(usize::MAX) + 1
     }
 
     fn write(
@@ -26,25 +21,24 @@ impl OpenRGBWritable for OpenRGBString {
         stream: &mut impl OpenRGBWritableSync,
         protocol: u32,
     ) -> Result<(), OpenRGBError> {
-        stream.write_value((self.len + 1) as u16, protocol)?;
-        stream.write_value(self.data, protocol)
+        stream.write_value(self.len() + 1, protocol)?;
+        stream
+            .write_all(&self.as_bytes())
+            .map_err(|_| OpenRGBError::CommunicationError())
     }
 }
 
-impl OpenRGBReadable for OpenRGBString {
+impl OpenRGBReadable for String {
     fn read(stream: &mut impl OpenRGBReadableSync, protocol: u32) -> Result<Self, OpenRGBError> {
         let len = stream.read_value::<u16>(protocol)?;
         // 1k should be enough for everybody
-        let mut buf: SmallVec<[u8; MAX_STRING]> = smallvec![0u8; len as usize];
+        let mut buf = Vec::with_capacity(len as usize);
         stream
             .read_exact(&mut buf)
             .map_err(|_| OpenRGBError::CommunicationError())?;
         buf.pop();
-        Ok(OpenRGBString {
-            data: buf,
-            len: len,
-        })
-        // core::str::from_utf8(&buf).map_err(|_| OpenRGBError::CommunicationError())
+
+        String::from_utf8(buf).map_err(|_| OpenRGBError::CommunicationError())
     }
 }
 

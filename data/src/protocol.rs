@@ -1,4 +1,5 @@
 use crate::{OpenRGBError, OpenRGBReadable, OpenRGBWritable, PacketId};
+use alloc::format;
 use genio::{Read, Write};
 
 static MAGIC: [u8; 4] = *b"ORGB";
@@ -23,7 +24,7 @@ pub trait OpenRGBReadableSync: Read + Sized {
     ) -> Result<usize, OpenRGBError> {
         let mut buf = [0u8; 4];
         self.read_exact(&mut buf[0..4])
-            .map_err(|_| OpenRGBError::ProtocolError())?;
+            .map_err(|e| OpenRGBError::ProtocolError(format!("read error for magic")))?;
         for (i, c) in buf.iter().enumerate() {
             if *c != MAGIC[i] {
                 return Err(OpenRGBError::BadMagic(*c));
@@ -48,7 +49,7 @@ pub trait OpenRGBReadableSync: Read + Sized {
 
         self.read_value::<u32>(protocol)?
             .try_into()
-            .map_err(|e| OpenRGBError::CommunicationError())
+            .map_err(|_| OpenRGBError::CommunicationError())
     }
 
     fn read_packet<O: OpenRGBReadable>(
@@ -62,6 +63,8 @@ pub trait OpenRGBReadableSync: Read + Sized {
         self.read_value(protocol)
     }
 }
+
+impl OpenRGBReadableSync for &[u8] {}
 
 pub trait OpenRGBWritableSync: Write + Sized {
     fn write_value<T: OpenRGBWritable>(

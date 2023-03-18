@@ -1,3 +1,4 @@
+use alloc::format;
 use byteorder::LittleEndian;
 
 use crate::protocol::{OpenRGBReadableSync, OpenRGBWritableSync};
@@ -130,7 +131,10 @@ impl OpenRGBWritable for usize {
         stream: &mut impl OpenRGBWritableSync,
         protocol: u32,
     ) -> Result<(), OpenRGBError> {
-        stream.write_value(u32::try_from(self).map_err(|e| ProtocolError())?, protocol)
+        stream.write_value(
+            u32::try_from(self).map_err(|e| ProtocolError(format!("{:?}", e)))?,
+            protocol,
+        )
     }
 }
 

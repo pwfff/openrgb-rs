@@ -1,10 +1,11 @@
+use alloc::format;
+use alloc::string::String;
+use alloc::vec::Vec;
 use flagset::FlagSet;
 use num_traits::FromPrimitive;
-use smallvec::SmallVec;
 
 use crate::protocol::{OpenRGBReadableSync, OpenRGBWritableSync};
 use crate::OpenRGBError::{self, ProtocolError};
-use crate::OpenRGBString;
 use crate::{
     Color, ColorMode, Direction,
     ModeFlag::{self, *},
@@ -19,7 +20,7 @@ const MAX_COLORS: usize = 128;
 #[derive(Debug, Eq, PartialEq)]
 pub struct Mode {
     /// Mode name.
-    pub name: OpenRGBString,
+    pub name: String,
 
     /// Mode value.
     pub value: i32,
@@ -49,7 +50,7 @@ pub struct Mode {
     pub color_mode: Option<ColorMode>,
 
     /// Mode colors.
-    pub colors: SmallVec<[Color; MAX_COLORS]>,
+    pub colors: Vec<Color>,
 
     /// Mode minimum colors (if mode has non empty [Mode::colors] list).
     pub colors_min: Option<u32>,
@@ -88,7 +89,7 @@ impl OpenRGBReadable for Mode {
         };
         let direction = stream.read_value(protocol)?;
         let color_mode = stream.read_value(protocol)?;
-        let colors = stream.read_value::<SmallVec<[Color; MAX_COLORS]>>(protocol)?;
+        let colors: Vec<Color> = stream.read_value(protocol)?;
 
         Ok(Mode {
             name,
@@ -135,7 +136,10 @@ impl OpenRGBReadable for Mode {
                 None
             },
             direction: if flags.contains(HasDirection) {
-                Some(Direction::from_u32(direction).ok_or_else(|| ProtocolError())?)
+                Some(
+                    Direction::from_u32(direction)
+                        .ok_or_else(|| ProtocolError(format!("bad direction")))?,
+                )
             } else {
                 None
             },

@@ -1,11 +1,12 @@
-use smallvec::{Array, SmallVec};
+use alloc::format;
+use alloc::vec::Vec;
 
 use crate::protocol::{OpenRGBReadableSync, OpenRGBWritableSync};
 use crate::OpenRGBError;
 use crate::OpenRGBError::ProtocolError;
 use crate::{OpenRGBReadable, OpenRGBWritable};
 
-impl<T: OpenRGBWritable, U: Array<Item = T> + Sync> OpenRGBWritable for SmallVec<U> {
+impl<T: OpenRGBWritable> OpenRGBWritable for Vec<T> {
     fn size(&self, protocol: u32) -> usize {
         (2 * 1) + self.iter().map(|e| e.size(protocol)).sum::<usize>()
     }
@@ -16,7 +17,8 @@ impl<T: OpenRGBWritable, U: Array<Item = T> + Sync> OpenRGBWritable for SmallVec
         protocol: u32,
     ) -> Result<(), OpenRGBError> {
         stream.write_value(
-            u16::try_from(self.len()).map_err(|e| ProtocolError())?,
+            u16::try_from(self.len())
+                .map_err(|_| ProtocolError(format!("error writing list size")))?,
             protocol,
         )?;
         for elem in self {
@@ -26,10 +28,10 @@ impl<T: OpenRGBWritable, U: Array<Item = T> + Sync> OpenRGBWritable for SmallVec
     }
 }
 
-impl<T: OpenRGBReadable, U: Array<Item = T> + Sync> OpenRGBReadable for SmallVec<U> {
+impl<T: OpenRGBReadable> OpenRGBReadable for Vec<T> {
     fn read(stream: &mut impl OpenRGBReadableSync, protocol: u32) -> Result<Self, OpenRGBError> {
         let len = stream.read_value::<u16>(protocol)? as usize;
-        let mut vec = SmallVec::with_capacity(len);
+        let mut vec = Vec::with_capacity(len);
         for _ in 0..len {
             vec.push(stream.read_value(protocol)?);
         }

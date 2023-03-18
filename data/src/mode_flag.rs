@@ -1,3 +1,4 @@
+use alloc::format;
 use flagset::{flags, FlagSet};
 
 use crate::protocol::{OpenRGBReadableSync, OpenRGBWritableSync};
@@ -62,7 +63,7 @@ impl OpenRGBWritable for FlagSet<ModeFlag> {
 impl OpenRGBReadable for FlagSet<ModeFlag> {
     fn read(stream: &mut impl OpenRGBReadableSync, protocol: u32) -> Result<Self, OpenRGBError> {
         let value = stream.read_value(protocol)?;
-        FlagSet::<ModeFlag>::new(value).map_err(|e| ProtocolError())
+        FlagSet::<ModeFlag>::new(value).map_err(|e| ProtocolError(format!("{:?}: {}", e, value)))
     }
 }
 

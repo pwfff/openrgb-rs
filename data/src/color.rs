@@ -7,9 +7,9 @@ use crate::{OpenRGBReadable, OpenRGBWritable};
 /// See [Open SDK documentation](https://gitlab.com/CalcProgrammer1/OpenRGB/-/wikis/OpenRGB-SDK-Documentation) for more information.
 #[derive(Default, Debug, Eq, PartialEq)]
 pub struct Color {
-    r: u8,
-    g: u8,
-    b: u8,
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
 }
 
 impl OpenRGBReadable for Color {

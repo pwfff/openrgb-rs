@@ -1,13 +1,14 @@
+use alloc::string::String;
+
 use crate::protocol::OpenRGBReadableSync;
 use crate::OpenRGBError;
 use crate::OpenRGBReadable;
-use crate::OpenRGBString;
 
 /// A single LED.
 #[derive(Debug, Eq, PartialEq)]
 pub struct LED {
     /// LED name.
-    pub name: OpenRGBString,
+    pub name: String,
 
     /// LED value.
     pub value: u32,

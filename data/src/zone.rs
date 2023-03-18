@@ -1,7 +1,8 @@
+use alloc::string::String;
 use smallvec::SmallVec;
 
 use crate::protocol::OpenRGBReadableSync;
-use crate::{OpenRGBError, OpenRGBString};
+use crate::OpenRGBError;
 use crate::{OpenRGBReadable, ZoneType};
 
 const MAX_LEDS: usize = 2048;
@@ -23,7 +24,7 @@ pub struct Matrix {
 #[derive(Debug, Eq, PartialEq)]
 pub struct Zone {
     /// Zone name.
-    pub name: OpenRGBString,
+    pub name: String,
 
     /// Zone type.
     pub r#type: ZoneType,

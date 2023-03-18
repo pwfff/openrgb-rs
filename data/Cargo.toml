@@ -10,6 +10,8 @@ enum-primitive-derive = "0.2.2"
 genio = { git = "https://github.com/Kixunil/genio", features = ["byteorder"] }
 anyhow = { version = "1.0", default-features = false }
 byteorder = { version = "1.4.3", default-features = false }
+flexstr = { version = "0.9.2", default-features = false }
+thiserror-no-std = "2.0.2"
 
 [dependencies.num-traits]
 version = "0.2.15"

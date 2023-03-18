@@ -1,4 +1,8 @@
+use alloc::string::String;
+use thiserror_no_std::Error;
+
 /// Errors returned by [OpenRGB client](crate::OpenRGB).
+#[derive(Error, Debug)]
 pub enum OpenRGBError {
     /// Failed opening connection to OpenRGB server.
     ConnectionError(),
@@ -7,7 +11,7 @@ pub enum OpenRGBError {
     CommunicationError(),
 
     /// Invalid encountered while communicating with OpenRGB server.
-    ProtocolError(),
+    ProtocolError(String),
 
     /// Server does not support operation.
     UnsupportedOperation {
