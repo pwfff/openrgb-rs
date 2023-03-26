@@ -9,20 +9,19 @@ pub use color_mode::*;
 pub use controller::*;
 pub use device_type::*;
 pub use direction::*;
+pub use error::*;
 pub use led::*;
 pub use mode::*;
 pub use mode_flag::*;
 #[doc(hidden)]
 pub use packet::*;
 pub use primitive::*;
+pub use protocol::*;
 pub use string::*;
 pub use tuple::*;
 pub use vec::*;
 pub use zone::*;
 pub use zone_type::*;
-
-use crate::protocol::{OpenRGBReadableSync, OpenRGBWritableSync};
-use error::OpenRGBError;
 
 mod color;
 mod color_mode;

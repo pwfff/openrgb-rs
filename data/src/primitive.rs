@@ -1,5 +1,4 @@
 use alloc::format;
-use byteorder::LittleEndian;
 
 use crate::protocol::{OpenRGBReadableSync, OpenRGBWritableSync};
 use crate::OpenRGBError;
@@ -60,16 +59,19 @@ impl OpenRGBWritable for u16 {
         _protocol: u32,
     ) -> Result<(), OpenRGBError> {
         stream
-            .write_u16::<LittleEndian>(self)
-            .map_err(|_| OpenRGBError::CommunicationError())
+            .write(self.to_le_bytes().as_slice())
+            .map_err(|_| OpenRGBError::CommunicationError())?;
+        Ok(())
     }
 }
 
 impl OpenRGBReadable for u16 {
     fn read(stream: &mut impl OpenRGBReadableSync, _protocol: u32) -> Result<Self, OpenRGBError> {
+        let mut buf = [0u8; 2];
         stream
-            .read_u16::<LittleEndian>()
-            .map_err(|_| OpenRGBError::CommunicationError())
+            .read_exact(&mut buf)
+            .map_err(|_| OpenRGBError::CommunicationError())?;
+        Ok(u16::from_le_bytes(buf))
     }
 }
 
@@ -84,16 +86,19 @@ impl OpenRGBWritable for u32 {
         _protocol: u32,
     ) -> Result<(), OpenRGBError> {
         stream
-            .write_u32::<LittleEndian>(self)
-            .map_err(|_| OpenRGBError::CommunicationError())
+            .write(self.to_le_bytes().as_slice())
+            .map_err(|_| OpenRGBError::CommunicationError())?;
+        Ok(())
     }
 }
 
 impl OpenRGBReadable for u32 {
     fn read(stream: &mut impl OpenRGBReadableSync, _protocol: u32) -> Result<Self, OpenRGBError> {
+        let mut buf = [0u8; 4];
         stream
-            .read_u32::<LittleEndian>()
-            .map_err(|_| OpenRGBError::CommunicationError())
+            .read_exact(&mut buf)
+            .map_err(|_| OpenRGBError::CommunicationError())?;
+        Ok(u32::from_le_bytes(buf))
     }
 }
 
@@ -108,16 +113,19 @@ impl OpenRGBWritable for i32 {
         _protocol: u32,
     ) -> Result<(), OpenRGBError> {
         stream
-            .write_i32::<LittleEndian>(self)
-            .map_err(|_| OpenRGBError::CommunicationError())
+            .write(self.to_le_bytes().as_slice())
+            .map_err(|_| OpenRGBError::CommunicationError())?;
+        Ok(())
     }
 }
 
 impl OpenRGBReadable for i32 {
     fn read(stream: &mut impl OpenRGBReadableSync, _protocol: u32) -> Result<Self, OpenRGBError> {
+        let mut buf = [0u8; 4];
         stream
-            .read_i32::<LittleEndian>()
-            .map_err(|_| OpenRGBError::CommunicationError())
+            .read_exact(&mut buf)
+            .map_err(|_| OpenRGBError::CommunicationError())?;
+        Ok(i32::from_le_bytes(buf))
     }
 }
 

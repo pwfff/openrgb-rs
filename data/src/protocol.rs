@@ -4,6 +4,58 @@ use genio::{Read, Write};
 
 static MAGIC: [u8; 4] = *b"ORGB";
 
+#[derive(Debug, Default)]
+pub struct Header {
+    pub magic: [u8; 4],
+    pub device_id: u32,
+    pub packet_id: PacketId,
+    pub len: u32,
+}
+
+impl OpenRGBReadable for Header {
+    fn read(stream: &mut impl OpenRGBReadableSync, protocol: u32) -> Result<Self, OpenRGBError> {
+        let mut h = Header::default();
+        stream
+            .read_exact(&mut h.magic)
+            .map_err(|_| OpenRGBError::ProtocolError(format!("read error for magic")))?;
+        for (i, c) in h.magic.iter().enumerate() {
+            if *c != MAGIC[i] {
+                return Err(OpenRGBError::BadMagic(*c));
+            }
+        }
+
+        h.device_id = stream.read_value::<u32>(protocol)?;
+
+        h.packet_id = stream.read_value::<PacketId>(protocol)?;
+
+        h.len = stream
+            .read_value::<u32>(protocol)?
+            .try_into()
+            .map_err(|_| OpenRGBError::CommunicationError())?;
+
+        Ok(h)
+    }
+}
+
+impl OpenRGBWritable for Header {
+    fn size(&self, _: u32) -> usize {
+        4 + 4 + 4 + 4
+    }
+
+    fn write(
+        self,
+        stream: &mut impl OpenRGBWritableSync,
+        protocol: u32,
+    ) -> Result<(), OpenRGBError> {
+        stream
+            .write_all(&self.magic)
+            .map_err(|_| OpenRGBError::ProtocolError(format!("write error for magic")))?;
+        stream.write_value(self.device_id, protocol)?;
+        stream.write_value(self.packet_id, protocol)?;
+        stream.write_value(self.len, protocol)
+    }
+}
+
 pub trait OpenRGBReadableSync: Read + Sized {
     fn read_value<T: OpenRGBReadable>(&mut self, protocol: u32) -> Result<T, OpenRGBError> {
         T::read(self, protocol)
@@ -16,6 +68,10 @@ pub trait OpenRGBReadableSync: Read + Sized {
         Ok(buf[0])
     }
 
+    fn read_any(&mut self, protocol: u32) -> Result<Header, OpenRGBError> {
+        Ok(self.read_value(protocol)?)
+    }
+
     fn read_header(
         &mut self,
         protocol: u32,
@@ -24,7 +80,7 @@ pub trait OpenRGBReadableSync: Read + Sized {
     ) -> Result<usize, OpenRGBError> {
         let mut buf = [0u8; 4];
         self.read_exact(&mut buf[0..4])
-            .map_err(|e| OpenRGBError::ProtocolError(format!("read error for magic")))?;
+            .map_err(|_| OpenRGBError::ProtocolError(format!("read error for magic")))?;
         for (i, c) in buf.iter().enumerate() {
             if *c != MAGIC[i] {
                 return Err(OpenRGBError::BadMagic(*c));
@@ -64,7 +120,8 @@ pub trait OpenRGBReadableSync: Read + Sized {
     }
 }
 
-impl OpenRGBReadableSync for &[u8] {}
+// impl OpenRGBReadableSync for &[u8] {}
+impl<T: Read> OpenRGBReadableSync for T {}
 
 pub trait OpenRGBWritableSync: Write + Sized {
     fn write_value<T: OpenRGBWritable>(
@@ -106,6 +163,8 @@ pub trait OpenRGBWritableSync: Write + Sized {
         Ok(())
     }
 }
+
+impl<T: Write> OpenRGBWritableSync for T {}
 
 pub trait OpenRGBSync: OpenRGBReadableSync + OpenRGBWritableSync {
     fn request<I: OpenRGBWritable, O: OpenRGBReadable>(
