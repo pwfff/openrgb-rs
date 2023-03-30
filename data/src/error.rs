@@ -1,3 +1,4 @@
+use alloc::format;
 use alloc::string::String;
 use thiserror_no_std::Error;
 
@@ -8,7 +9,7 @@ pub enum OpenRGBError {
     ConnectionError(),
 
     /// Communication failure with OpenRGB server.
-    CommunicationError(),
+    CommunicationError(String),
 
     /// Invalid encountered while communicating with OpenRGB server.
     ProtocolError(String),
@@ -35,4 +36,8 @@ pub enum OpenRGBError {
         expected: u32,
         got: u32,
     },
+}
+
+pub fn from_debug<T: core::fmt::Debug>(value: T) -> OpenRGBError {
+    OpenRGBError::CommunicationError(format!("{:?}", value))
 }

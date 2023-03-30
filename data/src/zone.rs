@@ -1,3 +1,4 @@
+use alloc::format;
 use alloc::string::String;
 use smallvec::SmallVec;
 
@@ -55,9 +56,9 @@ impl OpenRGBReadable for Zone {
             _ => Some({
                 let matrix_height = stream.read_value::<u32>(protocol)?;
                 let matrix_width = stream.read_value::<u32>(protocol)?;
-                let matrix_size: u16 = (matrix_height * matrix_width)
-                    .try_into()
-                    .map_err(|_| OpenRGBError::CommunicationError())?;
+                let matrix_size: u16 = (matrix_height * matrix_width).try_into().map_err(|_| {
+                    OpenRGBError::CommunicationError(format!("failed reading matrix size"))
+                })?;
                 let mut matrix_data = SmallVec::with_capacity(matrix_size.into());
                 for _ in 0..matrix_size {
                     matrix_data.push(stream.read_value(protocol)?);

@@ -29,14 +29,15 @@ extern crate num_traits;
 
 #[doc(inline)]
 pub use {
-    client::{DEFAULT_ADDR, DEFAULT_PROTOCOL, OpenRGB},
+    client::{OpenRGB, DEFAULT_ADDR, DEFAULT_PROTOCOL},
     error::OpenRGBError,
+    protocol::*,
 };
 
 mod client;
+pub mod data;
 mod error;
 mod protocol;
-pub mod data;
 
 #[cfg(test)]
 mod tests;

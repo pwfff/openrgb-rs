@@ -1,3 +1,4 @@
+use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
@@ -24,7 +25,7 @@ impl OpenRGBWritable for String {
         stream.write_value(self.len() + 1, protocol)?;
         stream
             .write_all(&self.as_bytes())
-            .map_err(|_| OpenRGBError::CommunicationError())
+            .map_err(|_| OpenRGBError::CommunicationError(format!("failed writing String")))
     }
 }
 
@@ -33,12 +34,13 @@ impl OpenRGBReadable for String {
         let len = stream.read_value::<u16>(protocol)?;
         // 1k should be enough for everybody
         let mut buf = Vec::with_capacity(len as usize);
-        stream
-            .read_exact(&mut buf)
-            .map_err(|_| OpenRGBError::CommunicationError())?;
+        stream.read_exact(&mut buf).map_err(|_| {
+            OpenRGBError::CommunicationError(format!("failed reading String length"))
+        })?;
         buf.pop();
 
-        String::from_utf8(buf).map_err(|_| OpenRGBError::CommunicationError())
+        String::from_utf8(buf)
+            .map_err(|_| OpenRGBError::CommunicationError(format!("failed writing String")))
     }
 }
 

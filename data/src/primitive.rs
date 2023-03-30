@@ -37,7 +37,7 @@ impl OpenRGBWritable for u8 {
     ) -> Result<(), OpenRGBError> {
         stream
             .write(&[self])
-            .map_err(|_| OpenRGBError::CommunicationError())?;
+            .map_err(|_| OpenRGBError::CommunicationError(format!("failed writing u8")))?;
         Ok(())
     }
 }
@@ -60,7 +60,7 @@ impl OpenRGBWritable for u16 {
     ) -> Result<(), OpenRGBError> {
         stream
             .write(self.to_le_bytes().as_slice())
-            .map_err(|_| OpenRGBError::CommunicationError())?;
+            .map_err(|_| OpenRGBError::CommunicationError(format!("failed writing u16")))?;
         Ok(())
     }
 }
@@ -70,7 +70,7 @@ impl OpenRGBReadable for u16 {
         let mut buf = [0u8; 2];
         stream
             .read_exact(&mut buf)
-            .map_err(|_| OpenRGBError::CommunicationError())?;
+            .map_err(|_| OpenRGBError::CommunicationError(format!("failed reading u16")))?;
         Ok(u16::from_le_bytes(buf))
     }
 }
@@ -87,7 +87,7 @@ impl OpenRGBWritable for u32 {
     ) -> Result<(), OpenRGBError> {
         stream
             .write(self.to_le_bytes().as_slice())
-            .map_err(|_| OpenRGBError::CommunicationError())?;
+            .map_err(|_| OpenRGBError::CommunicationError(format!("failed writing u32")))?;
         Ok(())
     }
 }
@@ -97,7 +97,7 @@ impl OpenRGBReadable for u32 {
         let mut buf = [0u8; 4];
         stream
             .read_exact(&mut buf)
-            .map_err(|_| OpenRGBError::CommunicationError())?;
+            .map_err(|_| OpenRGBError::CommunicationError(format!("failed reading u32")))?;
         Ok(u32::from_le_bytes(buf))
     }
 }
@@ -114,7 +114,7 @@ impl OpenRGBWritable for i32 {
     ) -> Result<(), OpenRGBError> {
         stream
             .write(self.to_le_bytes().as_slice())
-            .map_err(|_| OpenRGBError::CommunicationError())?;
+            .map_err(|_| OpenRGBError::CommunicationError(format!("failed writing i32")))?;
         Ok(())
     }
 }
@@ -124,7 +124,7 @@ impl OpenRGBReadable for i32 {
         let mut buf = [0u8; 4];
         stream
             .read_exact(&mut buf)
-            .map_err(|_| OpenRGBError::CommunicationError())?;
+            .map_err(|_| OpenRGBError::CommunicationError(format!("failed reading i32")))?;
         Ok(i32::from_le_bytes(buf))
     }
 }

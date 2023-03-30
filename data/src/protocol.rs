@@ -1,5 +1,7 @@
 use crate::{OpenRGBError, OpenRGBReadable, OpenRGBWritable, PacketId};
+use alloc::fmt::{format, Debug};
 use alloc::format;
+use alloc::vec::Vec;
 use genio::{Read, Write};
 
 static MAGIC: [u8; 4] = *b"ORGB";
@@ -31,7 +33,7 @@ impl OpenRGBReadable for Header {
         h.len = stream
             .read_value::<u32>(protocol)?
             .try_into()
-            .map_err(|_| OpenRGBError::CommunicationError())?;
+            .map_err(crate::from_debug)?;
 
         Ok(h)
     }
@@ -48,8 +50,8 @@ impl OpenRGBWritable for Header {
         protocol: u32,
     ) -> Result<(), OpenRGBError> {
         stream
-            .write_all(&self.magic)
-            .map_err(|_| OpenRGBError::ProtocolError(format!("write error for magic")))?;
+            .write_all(&MAGIC)
+            .map_err(|_| OpenRGBError::CommunicationError("()".into()))?;
         stream.write_value(self.device_id, protocol)?;
         stream.write_value(self.packet_id, protocol)?;
         stream.write_value(self.len, protocol)
@@ -64,7 +66,7 @@ pub trait OpenRGBReadableSync: Read + Sized {
     fn read_u8(&mut self) -> Result<u8, OpenRGBError> {
         let mut buf = [0u8; 1];
         self.read(&mut buf)
-            .map_err(|_| OpenRGBError::CommunicationError())?;
+            .map_err(|_| OpenRGBError::CommunicationError(format!("failed reading u8")))?;
         Ok(buf[0])
     }
 
@@ -105,7 +107,7 @@ pub trait OpenRGBReadableSync: Read + Sized {
 
         self.read_value::<u32>(protocol)?
             .try_into()
-            .map_err(|_| OpenRGBError::CommunicationError())
+            .map_err(|_| OpenRGBError::CommunicationError(format!("failed reading packet size")))
     }
 
     fn read_packet<O: OpenRGBReadable>(
@@ -138,9 +140,11 @@ pub trait OpenRGBWritableSync: Write + Sized {
         device_id: u32,
         packet_id: PacketId,
         data_len: usize,
-    ) -> Result<(), OpenRGBError> {
-        self.write_all(&MAGIC)
-            .map_err(|_| OpenRGBError::CommunicationError())?;
+    ) -> Result<(), OpenRGBError>
+    where
+        <Self as genio::Write>::WriteError: Debug,
+    {
+        self.write_all(&MAGIC).map_err(crate::from_debug)?;
         self.write_value(device_id, protocol)?;
         self.write_value(packet_id, protocol)?;
         self.write_value(data_len, protocol)?;
@@ -153,7 +157,10 @@ pub trait OpenRGBWritableSync: Write + Sized {
         device_id: u32,
         packet_id: PacketId,
         data: I,
-    ) -> Result<(), OpenRGBError> {
+    ) -> Result<(), OpenRGBError>
+    where
+        <Self as genio::Write>::WriteError: Debug,
+    {
         let size = data.size(protocol);
         {
             self.write_header(protocol, device_id, packet_id, size)?;
@@ -173,9 +180,51 @@ pub trait OpenRGBSync: OpenRGBReadableSync + OpenRGBWritableSync {
         device_id: u32,
         packet_id: PacketId,
         data: I,
-    ) -> Result<O, OpenRGBError> {
+    ) -> Result<O, OpenRGBError>
+    where
+        <Self as genio::Write>::WriteError: Debug,
+    {
         self.write_packet(protocol, device_id, packet_id, data)?;
         self.read_packet(protocol, device_id, packet_id)
+    }
+}
+
+pub struct WriteVec<'a>(&'a mut Vec<u8>);
+
+impl<'a> WriteVec<'a> {
+    pub fn new(data: &'a mut Vec<u8>) -> Self {
+        Self(data)
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn capacity(&self) -> usize {
+        self.0.capacity()
+    }
+}
+
+impl<'a> Write for WriteVec<'a> {
+    type WriteError = OpenRGBError;
+
+    type FlushError = OpenRGBError;
+
+    fn write(&mut self, buf: &[u8]) -> Result<usize, Self::WriteError> {
+        self.0.extend_from_slice(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> Result<(), Self::FlushError> {
+        Ok(())
+    }
+
+    fn size_hint(&mut self, bytes: usize) {
+        self.0.reserve(bytes)
+    }
+
+    fn uses_size_hint(&self) -> bool {
+        true
     }
 }
 
