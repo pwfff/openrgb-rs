@@ -3,7 +3,7 @@ use alloc::string::String;
 use smallvec::SmallVec;
 
 use crate::protocol::OpenRGBReadableSync;
-use crate::OpenRGBError;
+use crate::{OpenRGBError, OpenRGBWritable};
 use crate::{OpenRGBReadable, ZoneType};
 
 const MAX_LEDS: usize = 2048;
@@ -79,6 +79,59 @@ impl OpenRGBReadable for Zone {
             leds_count,
             matrix,
         })
+    }
+}
+
+impl OpenRGBWritable for Zone {
+    fn size(&self, protocol: u32) -> usize {
+        let mut size = 0;
+        size += self.name.size(protocol);
+        size += self.r#type.size(protocol);
+        size += self.leds_min.size(protocol);
+        size += self.leds_max.size(protocol);
+        size += self.leds_count.size(protocol);
+
+        match &self.matrix {
+            None => {
+                size += 0_u16.size(protocol);
+            }
+            Some(matrix) => {
+                size += matrix.len.size(protocol);
+                size += matrix.height.size(protocol);
+                size += matrix.width.size(protocol);
+                size += 0_u32.size(protocol) * matrix.data.len();
+            }
+        };
+
+        size
+    }
+
+    fn write(
+        self,
+        stream: &mut impl crate::OpenRGBWritableSync,
+        protocol: u32,
+    ) -> Result<(), OpenRGBError> {
+        stream.write_value(self.name, protocol)?;
+        stream.write_value(self.r#type, protocol)?;
+        stream.write_value(self.leds_min, protocol)?;
+        stream.write_value(self.leds_max, protocol)?;
+        stream.write_value(self.leds_count, protocol)?;
+
+        match self.matrix {
+            None => {
+                stream.write_value::<u16>(0, protocol)?;
+            }
+            Some(matrix) => {
+                stream.write_value::<u16>(matrix.len, protocol)?;
+                stream.write_value::<u32>(matrix.height, protocol)?;
+                stream.write_value::<u32>(matrix.width, protocol)?;
+                for data in matrix.data {
+                    stream.write_value(data, protocol)?;
+                }
+            }
+        };
+
+        Ok(())
     }
 }
 

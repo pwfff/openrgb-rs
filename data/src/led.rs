@@ -3,6 +3,7 @@ use alloc::string::String;
 use crate::protocol::OpenRGBReadableSync;
 use crate::OpenRGBError;
 use crate::OpenRGBReadable;
+use crate::OpenRGBWritable;
 
 /// A single LED.
 #[derive(Debug, Eq, PartialEq)]
@@ -20,6 +21,23 @@ impl OpenRGBReadable for LED {
             name: stream.read_value(protocol)?,
             value: stream.read_value(protocol)?,
         })
+    }
+}
+
+impl OpenRGBWritable for LED {
+    fn size(&self, protocol: u32) -> usize {
+        self.name.size(protocol) + self.value.size(protocol)
+    }
+
+    fn write(
+        self,
+        stream: &mut impl crate::OpenRGBWritableSync,
+        protocol: u32,
+    ) -> Result<(), OpenRGBError> {
+        stream.write_value(self.name, protocol)?;
+        stream.write_value(self.value, protocol)?;
+
+        Ok(())
     }
 }
 

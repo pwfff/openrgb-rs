@@ -2,8 +2,8 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use crate::protocol::OpenRGBReadableSync;
-use crate::OpenRGBError;
 use crate::{Color, DeviceType, Mode, OpenRGBReadable, Zone, LED};
+use crate::{OpenRGBError, OpenRGBWritable};
 
 /// RGB controller.
 ///
@@ -81,6 +81,55 @@ impl OpenRGBReadable for Controller {
             leds,
             colors,
         })
+    }
+}
+
+impl OpenRGBWritable for Controller {
+    fn size(&self, protocol: u32) -> usize {
+        let mut size = 0;
+        size += 0u32.size(protocol);
+        size += self.r#type.size(protocol);
+        size += self.name.size(protocol);
+        size += self.vendor.size(protocol);
+        size += self.description.size(protocol);
+        size += self.version.size(protocol);
+        size += self.serial.size(protocol);
+        size += self.location.size(protocol);
+        size += (self.modes.len() as u16).size(protocol);
+        size += self.active_mode.size(protocol);
+        for mode in self.modes.iter() {
+            size += mode.size(protocol);
+        }
+        size += self.zones.size(protocol);
+        size += self.leds.size(protocol);
+        size += self.colors.size(protocol);
+
+        size
+    }
+
+    fn write(
+        self,
+        stream: &mut impl crate::OpenRGBWritableSync,
+        protocol: u32,
+    ) -> Result<(), OpenRGBError> {
+        stream.write_value(self.size(protocol) as u32, protocol)?;
+        stream.write_value(self.r#type, protocol)?;
+        stream.write_value(self.name, protocol)?;
+        stream.write_value(self.vendor, protocol)?;
+        stream.write_value(self.description, protocol)?;
+        stream.write_value(self.version, protocol)?;
+        stream.write_value(self.serial, protocol)?;
+        stream.write_value(self.location, protocol)?;
+        stream.write_value(self.modes.len() as u16, protocol)?;
+        stream.write_value(self.active_mode, protocol)?;
+        for mode in self.modes {
+            stream.write_value(mode, protocol)?;
+        }
+        stream.write_value(self.zones, protocol)?;
+        stream.write_value(self.leds, protocol)?;
+        stream.write_value(self.colors, protocol)?;
+
+        Ok(())
     }
 }
 

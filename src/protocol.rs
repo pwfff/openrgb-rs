@@ -22,7 +22,7 @@ pub trait OpenRGBReadableStream: AsyncReadExt + Sized + Send + Sync + Unpin {
         expected_device_id: u32,
         expected_packet_id: PacketId,
     ) -> Result<usize, OpenRGBError> {
-        debug!("Reading {:?} packet...", expected_packet_id);
+        println!("Reading {:?} packet...", expected_packet_id);
 
         for c in MAGIC {
             let got = self.read_u8().await?;
@@ -33,6 +33,7 @@ pub trait OpenRGBReadableStream: AsyncReadExt + Sized + Send + Sync + Unpin {
                 )));
             }
         }
+        println!("good magic");
 
         let device_id = self.read_value::<u32>(protocol).await?;
         if device_id != expected_device_id {

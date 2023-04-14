@@ -22,9 +22,12 @@ impl OpenRGBWritable for String {
         stream: &mut impl OpenRGBWritableSync,
         protocol: u32,
     ) -> Result<(), OpenRGBError> {
-        stream.write_value(self.len() + 1, protocol)?;
+        stream.write_value((self.len() + 1) as u16, protocol)?;
         stream
             .write_all(&self.as_bytes())
+            .map_err(|_| OpenRGBError::CommunicationError(format!("failed writing String")))?;
+        stream
+            .write_all(&[0u8])
             .map_err(|_| OpenRGBError::CommunicationError(format!("failed writing String")))
     }
 }
