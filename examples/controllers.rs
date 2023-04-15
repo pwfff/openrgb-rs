@@ -5,6 +5,8 @@ use openrgb::OpenRGB;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // connect to local server
+    tracing_subscriber::fmt::init();
+
     let client = OpenRGB::connect().await?;
 
     // query controllers count

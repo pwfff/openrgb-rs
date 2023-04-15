@@ -22,7 +22,7 @@ pub static DEFAULT_ADDR: (Ipv4Addr, u16) = (Ipv4Addr::LOCALHOST, 6742);
 /// OpenRGB client.
 pub struct OpenRGB<S: OpenRGBStream> {
     protocol: u32,
-    stream: Arc<Mutex<S>>,
+    pub stream: Arc<Mutex<S>>,
 }
 
 impl OpenRGB<TcpStream> {
