@@ -24,8 +24,5 @@ features = ["use-defmt"]
 version = "1.0"
 default-features = false
 
-[dependencies.openrgb-macros]
-path = "../macros"
-
 [features]
 default = []

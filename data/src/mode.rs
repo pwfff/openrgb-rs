@@ -17,7 +17,7 @@ const MAX_COLORS: usize = 128;
 /// RGB controller mode.
 ///
 /// See [Open SDK documentation](https://gitlab.com/CalcProgrammer1/OpenRGB/-/wikis/OpenRGB-SDK-Documentation#mode-data) for more information.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Mode {
     /// Mode name.
     pub name: String,

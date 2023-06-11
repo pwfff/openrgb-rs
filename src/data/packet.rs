@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::mem::size_of;
 
 use async_trait::async_trait;
@@ -87,6 +88,18 @@ impl OpenRGBReadable for PacketId {
             PacketId::from_u32(id)
                 .ok_or_else(|| ProtocolError(format!("unknown packed ID \"{}\"", id)))
         })
+    }
+}
+
+impl PacketId {
+    pub fn expect_response(self) -> bool {
+        match self {
+            PacketId::RequestControllerCount => true,
+            PacketId::RequestControllerData => true,
+            PacketId::RequestProtocolVersion => true,
+            PacketId::RequestProfileList => true,
+            _ => false,
+        }
     }
 }
 

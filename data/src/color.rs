@@ -5,7 +5,7 @@ use crate::{OpenRGBReadable, OpenRGBWritable};
 /// RGB controller color, aliased to [rgb] crate's [RGB8] type.
 ///
 /// See [Open SDK documentation](https://gitlab.com/CalcProgrammer1/OpenRGB/-/wikis/OpenRGB-SDK-Documentation) for more information.
-#[derive(Default, Debug, Eq, PartialEq)]
+#[derive(Default, Debug, Eq, PartialEq, Clone)]
 pub struct Color {
     pub r: u8,
     pub g: u8,

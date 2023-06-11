@@ -1,6 +1,6 @@
 use alloc::format;
 use alloc::string::String;
-use alloc::vec::Vec;
+use alloc::vec;
 
 use crate::protocol::{OpenRGBReadableSync, OpenRGBWritableSync};
 use crate::OpenRGBError;
@@ -22,6 +22,20 @@ impl OpenRGBWritable for String {
         stream: &mut impl OpenRGBWritableSync,
         protocol: u32,
     ) -> Result<(), OpenRGBError> {
+        (&self).write(stream, protocol)
+    }
+}
+
+impl OpenRGBWritable for &String {
+    fn size(&self, _protocol: u32) -> usize {
+        (*self).size(_protocol)
+    }
+
+    fn write(
+        self,
+        stream: &mut impl OpenRGBWritableSync,
+        protocol: u32,
+    ) -> Result<(), OpenRGBError> {
         stream.write_value((self.len() + 1) as u16, protocol)?;
         stream
             .write_all(&self.as_bytes())
@@ -35,8 +49,7 @@ impl OpenRGBWritable for String {
 impl OpenRGBReadable for String {
     fn read(stream: &mut impl OpenRGBReadableSync, protocol: u32) -> Result<Self, OpenRGBError> {
         let len = stream.read_value::<u16>(protocol)?;
-        // 1k should be enough for everybody
-        let mut buf = Vec::with_capacity(len as usize);
+        let mut buf = vec![0; len as usize];
         stream.read_exact(&mut buf).map_err(|_| {
             OpenRGBError::CommunicationError(format!("failed reading String length"))
         })?;

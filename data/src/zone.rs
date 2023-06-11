@@ -1,6 +1,6 @@
 use alloc::format;
 use alloc::string::String;
-use smallvec::SmallVec;
+use alloc::vec::Vec;
 
 use crate::protocol::OpenRGBReadableSync;
 use crate::{OpenRGBError, OpenRGBWritable};
@@ -8,7 +8,7 @@ use crate::{OpenRGBReadable, ZoneType};
 
 const MAX_LEDS: usize = 2048;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Matrix {
     len: u16,
 
@@ -16,13 +16,13 @@ pub struct Matrix {
 
     width: u32,
 
-    data: SmallVec<[u32; MAX_LEDS]>,
+    data: Vec<u32>,
 }
 
 /// RGB controller zone.
 ///
 /// See [Open SDK documentation](https://gitlab.com/CalcProgrammer1/OpenRGB/-/wikis/OpenRGB-SDK-Documentation#zone-data) for more information.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Zone {
     /// Zone name.
     pub name: String,
@@ -59,7 +59,7 @@ impl OpenRGBReadable for Zone {
                 let matrix_size: u16 = (matrix_height * matrix_width).try_into().map_err(|_| {
                     OpenRGBError::CommunicationError(format!("failed reading matrix size"))
                 })?;
-                let mut matrix_data = SmallVec::with_capacity(matrix_size.into());
+                let mut matrix_data = Vec::with_capacity(matrix_size.into());
                 for _ in 0..matrix_size {
                     matrix_data.push(stream.read_value(protocol)?);
                 }
